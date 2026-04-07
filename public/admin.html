@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin | Swabodhini Autism Centre</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+    <nav class="navbar" id="navbar">
+        <a href="/admin" class="nav-brand">
+            <div class="logo">S</div>
+            <h1>Swabodhini Admin</h1>
+        </a>
+        <button class="nav-menu-btn" id="menuBtn">☰</button>
+        <div class="nav-links" id="navLinks">
+            <a href="/landing" class="nav-link">🏠 Store</a>
+            <button class="nav-link" id="logoutBtn">🚪 Logout</button>
+        </div>
+    </nav>
+    <div class="main-content">
+        <div class="container admin-page">
+            <div class="admin-header">
+                <h2>⚙️ Admin Dashboard</h2>
+                <button class="btn btn-primary btn-sm" id="addProductBtn">+ Add Product</button>
+            </div>
+            <div class="admin-tabs">
+                <button class="admin-tab active" data-tab="products">📦 Products</button>
+                <button class="admin-tab" data-tab="orders">🧾 Orders</button>
+            </div>
+            <div id="productsTab">
+                <div class="loading" id="productsLoading">
+                    <div class="spinner"></div>
+                </div>
+                <div style="overflow-x:auto;">
+                    <table class="admin-table" id="productsTable">
+                        <thead>
+                            <tr>
+                                <th>Image</th>
+                                <th>Name</th>
+                                <th>Price</th>
+                                <th>Category</th>
+                                <th>Stock</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="productsBody"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div id="ordersTab" style="display:none;">
+                <div class="loading" id="ordersLoading">
+                    <div class="spinner"></div>
+                </div>
+                <div style="overflow-x:auto;">
+                    <table class="admin-table" id="ordersTable">
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Customer</th>
+                                <th>Products</th>
+                                <th>Total</th>
+                                <th>Transaction ID</th>
+                                <th>Screenshot</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ordersBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Product Modal -->
+    <div class="modal-overlay" id="productModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modalTitle">Add Product</h3>
+                <button class="modal-close" id="closeModal">&times;</button>
+            </div>
+            <form id="productForm">
+                <input type="hidden" id="productId">
+                <div class="form-group"><label for="prodName">Product Name *</label><input type="text" id="prodName"
+                        required></div>
+                <div class="form-group"><label for="prodPrice">Price (₹) *</label><input type="number" id="prodPrice"
+                        min="0" required></div>
+                <div class="form-group"><label for="prodCategory">Category</label><input type="text" id="prodCategory"
+                        placeholder="e.g. Art & Craft"></div>
+                <div class="form-group"><label for="prodStock">Stock</label><input type="number" id="prodStock" min="0"
+                        value="10"></div>
+                <div class="form-group"><label for="prodDesc">Description *</label><textarea id="prodDesc" rows="4"
+                        required style="resize:vertical;"></textarea></div>
+                <div class="form-group"><label for="prodImage">Product Image</label><input type="file" id="prodImage"
+                        accept="image/*" style="padding:8px;"></div>
+                <button type="submit" class="btn btn-primary" id="saveProductBtn">Save Product</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Screenshot Modal -->
+    <div class="modal-overlay" id="screenshotModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Payment Screenshot</h3><button class="modal-close" id="closeScreenshot">&times;</button>
+            </div>
+            <img id="screenshotImage" src="" alt="Payment Screenshot" style="width:100%;border-radius:8px;">
+        </div>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+    <script src="/js/common.js"></script>
+    <script src="/js/admin.js"></script>
+</body>
+
+</html>

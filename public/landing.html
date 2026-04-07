@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Shop handmade products from Swabodhini Autism Centre - Art, Crafts, Home Decor and more">
+    <title>Shop | Swabodhini Autism Centre</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+    <!-- Navbar -->
+    <nav class="navbar" id="navbar">
+        <a href="/landing" class="nav-brand">
+            <div class="logo">S</div>
+            <h1>Swabodhini Autism Centre</h1>
+        </a>
+        <button class="nav-menu-btn" id="menuBtn">☰</button>
+        <div class="nav-links" id="navLinks">
+            <a href="/landing" class="nav-link active">🏠 Home</a>
+            <a href="/orders" class="nav-link">📦 My Orders</a>
+            <a href="/cart" class="nav-link">🛒 My Cart <span class="cart-badge" id="cartBadge">0</span></a>
+            <button class="nav-link" id="accountBtn">👤 <span id="userName">Account</span></button>
+            <button class="nav-link" id="logoutBtn">🚪 Logout</button>
+        </div>
+    </nav>
+
+    <div class="main-content">
+        <div class="container">
+            <div class="hero">
+                <h2>Handmade with Love & Purpose</h2>
+                <p>Every purchase supports the talented students of Swabodhini Autism Centre. Discover unique
+                    handcrafted products made with passion and care.</p>
+            </div>
+            <div class="loading" id="loadingSpinner">
+                <div class="spinner"></div>
+            </div>
+            <div class="products-grid" id="productsGrid"></div>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+    <script src="/js/common.js"></script>
+    <script src="/js/landing.js"></script>
+</body>
+
+</html>

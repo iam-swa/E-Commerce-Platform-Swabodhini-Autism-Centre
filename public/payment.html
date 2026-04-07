@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment | Swabodhini Autism Centre</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+    <nav class="navbar" id="navbar">
+        <a href="/landing" class="nav-brand">
+            <div class="logo">S</div>
+            <h1>Swabodhini Autism Centre</h1>
+        </a>
+        <button class="nav-menu-btn" id="menuBtn">☰</button>
+        <div class="nav-links" id="navLinks">
+            <a href="/landing" class="nav-link">🏠 Home</a>
+            <a href="/orders" class="nav-link">📦 My Orders</a>
+            <a href="/cart" class="nav-link">🛒 My Cart <span class="cart-badge" id="cartBadge">0</span></a>
+            <button class="nav-link" id="logoutBtn">🚪 Logout</button>
+        </div>
+    </nav>
+    <div class="main-content">
+        <div class="container">
+            <div class="payment-page">
+                <div class="payment-card">
+                    <h2>💳 Complete Your Payment</h2>
+                    <div class="order-summary-mini" id="orderSummary">
+                        <h4>Order Summary</h4>
+                        <div id="orderItems"></div>
+                        <div class="total-line"><span>Total:</span><span class="amount" id="paymentTotal">₹0</span>
+                        </div>
+                    </div>
+                    <div class="qr-code"><img src="/images/qr-code.png" alt="Payment QR Code" id="qrImage"></div>
+                    <div class="payment-instructions">
+                        <strong>📋 Payment Instructions:</strong><br>
+                        1. Open Google Pay / PhonePe / Paytm<br>
+                        2. Scan the QR code above<br>
+                        3. Pay the exact total amount<br>
+                        4. Take a screenshot of the payment confirmation<br>
+                        5. Upload the screenshot and enter the Transaction ID below
+                    </div>
+                    <form class="payment-form" id="paymentForm">
+                        <div class="form-group">
+                            <label>Upload Payment Screenshot *</label>
+                            <div class="file-upload" id="fileUpload">
+                                <div class="icon">📸</div>
+                                <p>Click or drag to upload screenshot</p>
+                                <div class="file-name" id="fileName"></div>
+                                <input type="file" id="screenshotInput" accept="image/*" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="transactionId">Transaction ID *</label>
+                            <input type="text" id="transactionId" placeholder="Enter UPI Transaction ID" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary" id="submitOrderBtn">✅ Confirm Order</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="toast-container" id="toastContainer"></div>
+    <script src="/js/common.js"></script>
+    <script src="/js/payment.js"></script>
+</body>
+
+</html>

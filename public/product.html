@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product | Swabodhini Autism Centre</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+    <nav class="navbar" id="navbar">
+        <a href="/landing" class="nav-brand">
+            <div class="logo">S</div>
+            <h1>Swabodhini Autism Centre</h1>
+        </a>
+        <button class="nav-menu-btn" id="menuBtn">☰</button>
+        <div class="nav-links" id="navLinks">
+            <a href="/landing" class="nav-link">🏠 Home</a>
+            <a href="/orders" class="nav-link">📦 My Orders</a>
+            <a href="/cart" class="nav-link">🛒 My Cart <span class="cart-badge" id="cartBadge">0</span></a>
+            <button class="nav-link" id="logoutBtn">🚪 Logout</button>
+        </div>
+    </nav>
+
+    <div class="main-content">
+        <div class="container">
+            <div class="loading" id="loadingSpinner">
+                <div class="spinner"></div>
+            </div>
+            <div class="product-detail" id="productDetail" style="display:none;">
+                <div class="product-detail-img"><img id="productImage" src="" alt="Product"></div>
+                <div class="product-detail-info">
+                    <span class="category-badge" id="productCategory"></span>
+                    <h1 id="productName"></h1>
+                    <div class="price" id="productPrice"></div>
+                    <div class="stock" id="productStock"></div>
+                    <div class="description" id="productDescription"></div>
+                    <div class="product-actions">
+                        <button class="btn btn-add-cart" id="addToCartBtn">🛒 Add to Cart</button>
+                        <button class="btn btn-buy-now" id="buyNowBtn">⚡ Buy Now</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+    <script src="/js/common.js"></script>
+    <script src="/js/product.js"></script>
+</body>
+
+</html>

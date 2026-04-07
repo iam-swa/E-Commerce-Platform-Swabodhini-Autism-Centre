@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Login to Swabodhini Autism Centre E-Commerce Store - Handmade products made with love">
+  <title>Login | Swabodhini Autism Centre</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="auth-page">
+    <!-- Login Form -->
+    <div class="auth-container" id="loginSection">
+      <div class="auth-card">
+        <div class="auth-header">
+          <div class="auth-logo">S</div>
+          <h2>Welcome Back</h2>
+          <p>Login to Swabodhini E-Commerce Store</p>
+        </div>
+        <div id="loginAlert" class="alert"></div>
+        <form id="loginForm">
+          <div class="form-group">
+            <label for="loginPhone">Phone Number</label>
+            <input type="tel" id="loginPhone" placeholder="Enter your phone number" required
+              pattern="[0-9]{10}" maxlength="10" title="Please enter a valid 10-digit phone number">
+          </div>
+          <button type="submit" class="btn btn-primary" id="loginBtn">Login</button>
+        </form>
+        <div class="auth-footer">
+          <p>Don't have an account? <a href="#" id="showSignup">Sign Up</a></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Signup Form -->
+    <div class="auth-container" id="signupSection" style="display:none;">
+      <div class="auth-card">
+        <div class="auth-header">
+          <div class="auth-logo">S</div>
+          <h2>Create Account</h2>
+          <p>Join Swabodhini E-Commerce Store</p>
+        </div>
+        <div id="signupAlert" class="alert"></div>
+        <form id="signupForm">
+          <div class="form-group">
+            <label for="signupName">Full Name</label>
+            <input type="text" id="signupName" placeholder="Enter your full name" required>
+          </div>
+          <div class="form-group">
+            <label for="signupPhone">Phone Number</label>
+            <input type="tel" id="signupPhone" placeholder="Enter your 10-digit phone number" required
+              pattern="[0-9]{10}" maxlength="10" title="Please enter a valid 10-digit phone number">
+          </div>
+          <button type="submit" class="btn btn-primary" id="signupBtn">Create Account</button>
+        </form>
+        <div class="auth-footer">
+          <p>Already have an account? <a href="#" id="showLogin">Login</a></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/auth.js"></script>
+</body>
+</html>

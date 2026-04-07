@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Admin Dashboard - Swabodhini Autism Centre E-Commerce Management">
+    <title>Admin Dashboard | Swabodhini Autism Centre</title>
+    <link rel="stylesheet" href="/css/admin-dashboard.css">
+</head>
+
+<body>
+    <div class="dashboard-layout">
+
+        <!-- Mobile sidebar toggle -->
+        <button class="sidebar-toggle" id="sidebarToggle">☰</button>
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+        <!-- ===== SIDEBAR ===== -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">S</div>
+                <div class="sidebar-title">
+                    <h1>Swabodhini</h1>
+                    <span>Admin Panel</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <button class="sidebar-link active" data-panel="dashboard" id="nav-dashboard">
+                    <span class="icon">📊</span> Dashboard Overview
+                </button>
+                <button class="sidebar-link" data-panel="products" id="nav-products">
+                    <span class="icon">📦</span> Manage Products
+                </button>
+                <button class="sidebar-link" data-panel="orders" id="nav-orders">
+                    <span class="icon">🧾</span> Manage Orders
+                    <span class="badge" id="pendingBadge" style="display:none;">0</span>
+                </button>
+                <button class="sidebar-link" data-panel="stock" id="nav-stock">
+                    <span class="icon">📋</span> Stock Management
+                    <span class="badge badge-warning" id="lowStockBadge" style="display:none;">0</span>
+                </button>
+                <button class="sidebar-link" data-panel="users" id="nav-users">
+                    <span class="icon">👥</span> Registered Users
+                </button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="sidebar-user">
+                    <div class="sidebar-user-avatar" id="userAvatar">A</div>
+                    <div class="sidebar-user-info">
+                        <div class="name" id="adminName">Admin</div>
+                        <div class="role">Administrator</div>
+                    </div>
+                </div>
+                <button class="sidebar-link sidebar-logout" id="logoutBtn">
+                    <span class="icon">🚪</span> Logout
+                </button>
+                <a href="/landing" class="sidebar-link" style="margin-top:4px;">
+                    <span class="icon">🏠</span> Visit Store
+                </a>
+            </div>
+        </aside>
+
+        <!-- ===== MAIN CONTENT ===== -->
+        <main class="main-content">
+
+            <!-- Header -->
+            <header class="main-header">
+                <div class="main-header-left">
+                    <h2 id="pageTitle">Dashboard Overview</h2>
+                    <p id="pageSubtitle">Welcome back! Here's what's happening today.</p>
+                </div>
+                <div class="main-header-actions">
+                    <button class="btn btn-primary btn-sm" id="addProductHeaderBtn" style="display:none;">
+                        ➕ Add Product
+                    </button>
+                </div>
+            </header>
+
+            <!-- Main Body -->
+            <div class="main-body">
+
+                <!-- ===== DASHBOARD PANEL ===== -->
+                <div class="panel active" id="panel-dashboard">
+                    <div class="stats-grid" id="statsGrid">
+                        <div class="stat-card stat-card-purple">
+                            <div class="stat-card-header">
+                                <div class="stat-card-icon">📦</div>
+                                <span class="stat-card-label">Products</span>
+                            </div>
+                            <div class="stat-card-value" id="statProducts">—</div>
+                            <div class="stat-card-footer"><span id="statActiveProducts">0</span> active</div>
+                        </div>
+                        <div class="stat-card stat-card-orange">
+                            <div class="stat-card-header">
+                                <div class="stat-card-icon">🧾</div>
+                                <span class="stat-card-label">Orders</span>
+                            </div>
+                            <div class="stat-card-value" id="statOrders">—</div>
+                            <div class="stat-card-footer"><span id="statPendingOrders">0</span> pending verification
+                            </div>
+                        </div>
+                        <div class="stat-card stat-card-green">
+                            <div class="stat-card-header">
+                                <div class="stat-card-icon">💰</div>
+                                <span class="stat-card-label">Revenue</span>
+                            </div>
+                            <div class="stat-card-value" id="statRevenue">—</div>
+                            <div class="stat-card-footer">From approved orders</div>
+                        </div>
+                        <div class="stat-card stat-card-blue">
+                            <div class="stat-card-header">
+                                <div class="stat-card-icon">👥</div>
+                                <span class="stat-card-label">Customers</span>
+                            </div>
+                            <div class="stat-card-value" id="statUsers">—</div>
+                            <div class="stat-card-footer">Registered users</div>
+                        </div>
+                    </div>
+
+                    <!-- Low Stock Alerts -->
+                    <div id="lowStockAlerts"></div>
+
+                    <!-- Quick Order Status and Recent Orders -->
+                    <div class="recent-orders-grid">
+                        <div class="panel-section">
+                            <div class="panel-section-header">
+                                <h3>📈 Order Breakdown</h3>
+                            </div>
+                            <div class="panel-section-body">
+                                <div style="display:flex;flex-direction:column;gap:10px;">
+                                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                                        <span style="color:var(--text-secondary);font-size:0.88rem;">Pending</span>
+                                        <span class="badge badge-warning" id="breakdownPending">0</span>
+                                    </div>
+                                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                                        <span style="color:var(--text-secondary);font-size:0.88rem;">Approved</span>
+                                        <span class="badge badge-success" id="breakdownApproved">0</span>
+                                    </div>
+                                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                                        <span style="color:var(--text-secondary);font-size:0.88rem;">Shipped</span>
+                                        <span class="badge badge-primary" id="breakdownShipped">0</span>
+                                    </div>
+                                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                                        <span style="color:var(--text-secondary);font-size:0.88rem;">Delivered</span>
+                                        <span class="badge badge-info" id="breakdownDelivered">0</span>
+                                    </div>
+                                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                                        <span style="color:var(--text-secondary);font-size:0.88rem;">Rejected</span>
+                                        <span class="badge badge-danger" id="breakdownRejected">0</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="panel-section">
+                            <div class="panel-section-header">
+                                <h3>🕐 Recent Orders</h3>
+                            </div>
+                            <div class="panel-section-body" id="recentOrdersList">
+                                <div class="loading">
+                                    <div class="spinner"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== PRODUCTS PANEL ===== -->
+                <div class="panel" id="panel-products">
+                    <div class="panel-section">
+                        <div class="panel-section-header">
+                            <h3>📦 All Products</h3>
+                            <button class="btn btn-primary btn-sm" id="addProductBtn">➕ Add New Product</button>
+                        </div>
+                        <div class="loading" id="productsLoading">
+                            <div class="spinner"></div>
+                        </div>
+                        <div class="data-table-wrapper">
+                            <table class="data-table" id="productsTable">
+                                <thead>
+                                    <tr>
+                                        <th>Image</th>
+                                        <th>Product Name</th>
+                                        <th>Price</th>
+                                        <th>Category</th>
+                                        <th>Stock</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="productsBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== ORDERS PANEL ===== -->
+                <div class="panel" id="panel-orders">
+                    <div class="panel-section">
+                        <div class="panel-section-header">
+                            <h3>🧾 All Orders</h3>
+                        </div>
+                        <div class="loading" id="ordersLoading">
+                            <div class="spinner"></div>
+                        </div>
+                        <div class="data-table-wrapper">
+                            <table class="data-table" id="ordersTable">
+                                <thead>
+                                    <tr>
+                                        <th>Order ID</th>
+                                        <th>Customer</th>
+                                        <th>Products</th>
+                                        <th>Total</th>
+                                        <th>Transaction ID</th>
+                                        <th>Screenshot</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="ordersBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== STOCK PANEL ===== -->
+                <div class="panel" id="panel-stock">
+                    <div id="stockAlertBanner"></div>
+                    <div class="panel-section">
+                        <div class="panel-section-header">
+                            <h3>📋 Stock Management</h3>
+                        </div>
+                        <div class="loading" id="stockLoading">
+                            <div class="spinner"></div>
+                        </div>
+                        <div class="data-table-wrapper">
+                            <table class="data-table" id="stockTable">
+                                <thead>
+                                    <tr>
+                                        <th>Product Name</th>
+                                        <th>Category</th>
+                                        <th>Price</th>
+                                        <th>Current Stock</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="stockBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== USERS PANEL ===== -->
+                <div class="panel" id="panel-users">
+                    <div class="panel-section">
+                        <div class="panel-section-header">
+                            <h3>👥 Registered Users</h3>
+                            <span class="badge badge-primary" id="totalUsersCount">0 users</span>
+                        </div>
+                        <div class="loading" id="usersLoading">
+                            <div class="spinner"></div>
+                        </div>
+                        <div class="data-table-wrapper">
+                            <table class="data-table" id="usersTable">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Name</th>
+                                        <th>Phone Number</th>
+                                        <th>Verified</th>
+                                        <th>Registered On</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="usersBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- ===== PRODUCT MODAL ===== -->
+    <div class="modal-overlay" id="productModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modalTitle">Add Product</h3>
+                <button class="modal-close" id="closeProductModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="productForm">
+                    <input type="hidden" id="productId">
+                    <div class="form-group">
+                        <label for="prodName">Product Name *</label>
+                        <input type="text" id="prodName" placeholder="Enter product name" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="prodPrice">Price (₹) *</label>
+                            <input type="number" id="prodPrice" min="0" placeholder="0" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="prodStock">Stock Quantity</label>
+                            <input type="number" id="prodStock" min="0" value="10" placeholder="10">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="prodCategory">Category</label>
+                        <input type="text" id="prodCategory" placeholder="e.g. Art & Craft">
+                    </div>
+                    <div class="form-group">
+                        <label for="prodDesc">Description *</label>
+                        <textarea id="prodDesc" rows="4" placeholder="Enter product description" required
+                            style="resize:vertical;"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Product Image</label>
+                        <div class="file-upload-area" id="imageUploadArea">
+                            <input type="file" id="prodImage" accept="image/*">
+                            <div class="upload-icon">📷</div>
+                            <p>Click to upload or drag and drop</p>
+                            <p style="font-size:0.75rem;color:var(--text-muted);margin-top:4px;">JPEG, PNG, GIF, WebP
+                                (max 5MB)</p>
+                            <div class="file-name" id="imageFileName"></div>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width:100%;" id="saveProductBtn">
+                        💾 Save Product
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== SCREENSHOT MODAL ===== -->
+    <div class="modal-overlay" id="screenshotModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Payment Screenshot</h3>
+                <button class="modal-close" id="closeScreenshotModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <img id="screenshotImage" src="" alt="Payment Screenshot" class="screenshot-preview">
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="/js/admin-dashboard.js"></script>
+</body>
+
+</html>
