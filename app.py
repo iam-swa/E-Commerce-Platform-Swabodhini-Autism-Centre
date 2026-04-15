@@ -11,6 +11,7 @@ from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 import jwt
 import bcrypt
+from recommender import get_recommendations
 
 # Load environment variables
 load_dotenv()
@@ -112,6 +113,27 @@ def init_db():
             user_id TEXT NOT NULL,
             product_id TEXT NOT NULL,
             quantity INTEGER DEFAULT 1 CHECK(quantity >= 1),
+            UNIQUE(user_id, product_id),
+            FOREIGN KEY(user_id) REFERENCES users(_id),
+            FOREIGN KEY(product_id) REFERENCES products(_id)
+        );
+
+        CREATE TABLE IF NOT EXISTS user_locations (
+            user_id TEXT PRIMARY KEY,
+            latitude REAL,
+            longitude REAL,
+            city TEXT,
+            region TEXT,
+            updatedAt TEXT DEFAULT (datetime('now')),
+            FOREIGN KEY(user_id) REFERENCES users(_id)
+        );
+
+        CREATE TABLE IF NOT EXISTS product_views (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            product_id TEXT NOT NULL,
+            view_count INTEGER DEFAULT 1,
+            last_viewed TEXT DEFAULT (datetime('now')),
             UNIQUE(user_id, product_id),
             FOREIGN KEY(user_id) REFERENCES users(_id),
             FOREIGN KEY(product_id) REFERENCES products(_id)
@@ -333,6 +355,44 @@ def get_product(product_id):
     if not product:
         return jsonify({'message': 'Product not found.'}), 404
     return jsonify(row_to_dict(product))
+
+
+# ────────────────────── RECOMMENDATIONS ──────────────────────
+
+@app.route('/api/products/<product_id>/recommendations', methods=['GET'])
+def product_recommendations(product_id):
+    """
+    ML-based hybrid recommendations for a product page.
+    Combines content-based (TF-IDF on name/description/category)
+    and collaborative filtering (purchase co-occurrence).
+    Optional query param: ?n=4  to control number of results.
+    """
+    db = get_db()
+
+    # Check product exists
+    product = db.execute("SELECT _id FROM products WHERE _id = ?", (product_id,)).fetchone()
+    if not product:
+        return jsonify({'message': 'Product not found.'}), 404
+
+    n = min(int(request.args.get('n', 4)), 8)  # cap at 8
+
+    # Get logged-in user if token present (to exclude already-bought)
+    user_id = None
+    token = request.headers.get('Authorization', '').replace('Bearer ', '')
+    if token:
+        try:
+            decoded = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+            user_id = decoded.get('userId')
+        except Exception:
+            pass
+
+    try:
+        recommendations = get_recommendations(db, product_id, user_id=user_id, n=n)
+        return jsonify(recommendations)
+    except Exception as e:
+        # Never let recommendation errors break the page
+        print(f'[Recommendations] Error: {e}')
+        return jsonify([])
 
 
 @app.route('/api/products', methods=['POST'])
@@ -749,6 +809,69 @@ def admin_update_stock(product_id):
 
     product = row_to_dict(db.execute("SELECT * FROM products WHERE _id = ?", (product_id,)).fetchone())
     return jsonify({'message': 'Stock updated successfully!', 'product': product})
+
+
+# ────────────────────── TRACKING ROUTES ──────────────────────
+
+@app.route('/api/track/view', methods=['POST'])
+@auth_required
+def track_view():
+    """Record that the logged-in user viewed a product."""
+    data = request.get_json()
+    product_id = data.get('productId')
+    if not product_id:
+        return jsonify({'message': 'productId required'}), 400
+
+    db = get_db()
+    # Upsert: increment view count & update timestamp
+    existing = db.execute(
+        "SELECT id FROM product_views WHERE user_id = ? AND product_id = ?",
+        (request.user['_id'], product_id)
+    ).fetchone()
+
+    if existing:
+        db.execute(
+            """UPDATE product_views
+               SET view_count = view_count + 1, last_viewed = datetime('now')
+               WHERE user_id = ? AND product_id = ?""",
+            (request.user['_id'], product_id)
+        )
+    else:
+        db.execute(
+            "INSERT INTO product_views (user_id, product_id) VALUES (?, ?)",
+            (request.user['_id'], product_id)
+        )
+    db.commit()
+    return jsonify({'message': 'View tracked'})
+
+
+@app.route('/api/user/location', methods=['POST'])
+@auth_required
+def update_location():
+    """Store the user's geolocation (lat/lng + optional city/region)."""
+    data = request.get_json()
+    lat = data.get('latitude')
+    lng = data.get('longitude')
+    city = data.get('city', '')
+    region = data.get('region', '')
+
+    if lat is None or lng is None:
+        return jsonify({'message': 'latitude and longitude required'}), 400
+
+    db = get_db()
+    db.execute(
+        """INSERT INTO user_locations (user_id, latitude, longitude, city, region, updatedAt)
+           VALUES (?, ?, ?, ?, ?, datetime('now'))
+           ON CONFLICT(user_id) DO UPDATE SET
+               latitude = excluded.latitude,
+               longitude = excluded.longitude,
+               city = excluded.city,
+               region = excluded.region,
+               updatedAt = excluded.updatedAt""",
+        (request.user['_id'], float(lat), float(lng), city, region)
+    )
+    db.commit()
+    return jsonify({'message': 'Location saved'})
 
 
 # ────────────────────── HTML PAGE ROUTES ──────────────────────

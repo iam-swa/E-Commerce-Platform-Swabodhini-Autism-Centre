@@ -1,0 +1,18 @@
+{
+  "trained_at": "2026-04-15T07:11:01.796018",
+  "product_ids": [
+    "eb8ab8d4163d486c95dfa5b7",
+    "2522c844909a4217978fdc21",
+    "ed49574da07142ceaa946609",
+    "ef7ccec811eb48719607697d",
+    "3b588faa62e744eb9409a11a",
+    "69af6f464710471cbee5cfb0",
+    "30e25b70c3e64d019d911f3b",
+    "b14ab23873424abda46b9269",
+    "24d72ff825414a119f7cbad9"
+  ],
+  "metrics": {},
+  "model": "SVD (scikit-surprise)",
+  "n_factors": 50,
+  "n_epochs": 30
+}

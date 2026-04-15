@@ -1,6 +1,5 @@
 // Common utilities used across pages
 
-// Check authentication
 function checkAuth() {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -82,7 +81,6 @@ function setupNavbar() {
         const user = getUser();
         userName.textContent = user.name || 'Account';
     }
-    // Scroll effect
     window.addEventListener('scroll', () => {
         const navbar = document.getElementById('navbar');
         if (navbar) navbar.classList.toggle('scrolled', window.scrollY > 20);
@@ -96,7 +94,60 @@ function formatPrice(price) {
 
 // Product image fallback
 function getProductImage(img) {
-    return img && img !== '/images/placeholder.png' ? img : `https://picsum.photos/seed/${Math.random().toString(36).substr(2, 6)}/400/300`;
+    return img && img !== '/images/placeholder.png'
+        ? img
+        : `https://picsum.photos/seed/${Math.random().toString(36).substr(2, 6)}/400/300`;
+}
+
+// ── Location: request once per session, send to backend ────────────────────
+/**
+ * Silently requests the browser's geolocation and posts it to /api/user/location.
+ * Only fires if:
+ *   - user is logged in
+ *   - we haven't already sent it this session (sessionStorage flag)
+ *   - browser supports geolocation
+ */
+function syncUserLocation() {
+    const token = getToken();
+    if (!token) return;
+    if (sessionStorage.getItem('locationSynced')) return;
+    if (!navigator.geolocation) return;
+
+    navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+            try {
+                sessionStorage.setItem('locationSynced', '1');
+                const { latitude, longitude } = pos.coords;
+
+                // Optional: reverse-geocode to get city/region using browser's
+                // free Nominatim (no API key needed, respects usage policy)
+                let city = '', region = '';
+                try {
+                    const geoRes = await fetch(
+                        `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
+                        { headers: { 'Accept-Language': 'en' } }
+                    );
+                    const geoData = await geoRes.json();
+                    city   = geoData.address?.city
+                          || geoData.address?.town
+                          || geoData.address?.village
+                          || '';
+                    region = geoData.address?.state || '';
+                } catch (_) { /* reverse geocode optional */ }
+
+                await fetch('/api/user/location', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ latitude, longitude, city, region })
+                });
+            } catch (_) { /* silently ignore */ }
+        },
+        () => { /* permission denied or error – do nothing */ },
+        { enableHighAccuracy: false, timeout: 8000, maximumAge: 3600000 }
+    );
 }
 
 // Init
@@ -104,4 +155,6 @@ document.addEventListener('DOMContentLoaded', () => {
     checkAuth();
     setupNavbar();
     updateCartBadge();
+    // Sync location quietly in the background
+    syncUserLocation();
 });
