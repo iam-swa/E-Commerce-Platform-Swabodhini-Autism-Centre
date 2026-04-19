@@ -1,0 +1,128 @@
+document.addEventListener('DOMContentLoaded', () => {
+    // Inject HTML
+    const chatbotHTML = `
+        <div id="chatbot-container">
+            <div id="chat-window" class="chat-window hidden">
+                <div class="chat-header">
+                    <h4>Customer Support</h4>
+                    <button id="close-chat" class="close-btn">&times;</button>
+                </div>
+                <div id="chat-messages" class="chat-messages">
+                    <div class="message bot-message">Hi there! How can I help you today?</div>
+                </div>
+                <div class="chat-input-area">
+                    <input type="text" id="chat-input" placeholder="Type your message..." autocomplete="off">
+                    <button id="send-btn">Send</button>
+                </div>
+            </div>
+            <button id="chatbot-toggle" class="chatbot-btn">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M21 11.5C21 16.1944 16.9706 20 12 20C10.7412 20 9.54228 19.761 8.46083 19.3308C8.22558 19.2373 7.96288 19.2452 7.73356 19.3533L4.35905 20.9427C3.96696 21.1274 3.51888 20.8066 3.58525 20.373L4.03264 17.4526C4.07221 17.1943 3.98776 16.9329 3.81188 16.7417C2.67389 15.313 2 13.4862 2 11.5C2 6.80558 6.47715 3 12 3C17.5228 3 21 6.80558 21 11.5Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', chatbotHTML);
+    
+    const chatWindow = document.getElementById('chat-window');
+    const chatbotToggle = document.getElementById('chatbot-toggle');
+    const closeChat = document.getElementById('close-chat');
+    const sendBtn = document.getElementById('send-btn');
+    const chatInput = document.getElementById('chat-input');
+    const chatMessages = document.getElementById('chat-messages');
+
+    // Load history from session storage if exists
+    const chatHistory = JSON.parse(sessionStorage.getItem('chatHistory')) || [];
+    if (chatHistory.length > 0) {
+        // Clear default greeting if we have history
+        chatMessages.innerHTML = '';
+        chatHistory.forEach(msg => {
+            appendMessage(msg.sender, msg.text, false);
+        });
+    }
+
+    chatbotToggle.addEventListener('click', () => {
+        chatWindow.classList.toggle('hidden');
+        if (!chatWindow.classList.contains('hidden')) {
+            chatInput.focus();
+            scrollToBottom();
+        }
+    });
+
+    closeChat.addEventListener('click', () => {
+        chatWindow.classList.add('hidden');
+    });
+
+    sendBtn.addEventListener('click', sendMessage);
+    chatInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            sendMessage();
+        }
+    });
+
+    async function sendMessage() {
+        const text = chatInput.value.trim();
+        if (!text) return;
+
+        appendMessage('user', text);
+        chatInput.value = '';
+        chatInput.focus();
+        
+        // Show typing indicator
+        const typingId = showTypingIndicator();
+
+        try {
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: text })
+            });
+            const data = await response.json();
+            
+            removeTypingIndicator(typingId);
+            appendMessage('bot', data.reply || "Something went wrong.");
+        } catch (error) {
+            removeTypingIndicator(typingId);
+            appendMessage('bot', "Connection error. Please try again later.");
+        }
+    }
+
+    function appendMessage(sender, text, saveToHistory = true) {
+        const msgDiv = document.createElement('div');
+        msgDiv.classList.add('message', sender === 'user' ? 'user-message' : 'bot-message');
+        msgDiv.textContent = text;
+        chatMessages.appendChild(msgDiv);
+        scrollToBottom();
+        
+        if (saveToHistory) {
+            const chatHistory = JSON.parse(sessionStorage.getItem('chatHistory')) || [];
+            // If empty, add default greeting first
+            if (chatHistory.length === 0) {
+                chatHistory.push({ sender: 'bot', text: 'Hi there! How can I help you today?' });
+            }
+            chatHistory.push({ sender, text });
+            sessionStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+        }
+    }
+
+    function scrollToBottom() {
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function showTypingIndicator() {
+        const id = 'typing-' + Date.now();
+        const msgDiv = document.createElement('div');
+        msgDiv.id = id;
+        msgDiv.classList.add('message', 'bot-message', 'typing-indicator');
+        msgDiv.innerHTML = '<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span>';
+        chatMessages.appendChild(msgDiv);
+        scrollToBottom();
+        return id;
+    }
+
+    function removeTypingIndicator(id) {
+        const el = document.getElementById(id);
+        if (el) el.remove();
+    }
+});

@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 import jwt
 import bcrypt
 from recommender import get_recommendations
-
+import google.generativeai as genai
 # Load environment variables
 load_dotenv()
 
@@ -872,6 +872,44 @@ def update_location():
     )
     db.commit()
     return jsonify({'message': 'Location saved'})
+
+
+# ────────────────────── CHATBOT ROUTES ──────────────────────
+
+@app.route('/api/chat', methods=['POST'])
+def chat():
+    """Handle customer support chatbot messages via Google Gemini API."""
+    data = request.get_json()
+    message = data.get('message', '').strip()
+    
+    if not message:
+        return jsonify({'reply': "I didn't quite catch that. How can I help you today?"})
+
+    api_key = os.getenv('GEMINI_API_KEY', 'AIzaSyBKPI-k7w_DbzKwRO4Hi5S35LHyvvjcZ-g')
+    if not api_key:
+        return jsonify({'reply': "Sorry, our AI assistant is currently unavailable. Please contact support."})
+
+    try:
+        genai.configure(api_key=api_key)
+        # Use standard gemini model
+        model = genai.GenerativeModel('gemini-2.5-flash')
+        
+        system_instruction = (
+            "You are a helpful e-commerce customer support assistant for Swabodhini Autism Centre. "
+            "Help users with product queries, shipping, payments, returns, and orders. "
+            "IMPORTANT POLICIES: 1) There is no return option for any products. "
+            "2) Payment can only be made by scanning the QR code shown on the screen during checkout. "
+            "Keep your responses short, clear, and user-friendly. Do not expose sensitive data. "
+            "If asked about topics completely unrelated to e-commerce or the centre, politely decline to answer."
+        )
+        
+        prompt = f"{system_instruction}\n\nUser: {message}\nAssistant:"
+        response = model.generate_content(prompt)
+        
+        return jsonify({'reply': response.text})
+    except Exception as e:
+        print(f"[Chatbot Error] Gemini API failed: {e}")
+        return jsonify({'reply': "Sorry, please try again later or contact support."})
 
 
 # ────────────────────── HTML PAGE ROUTES ──────────────────────
