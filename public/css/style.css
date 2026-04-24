@@ -471,6 +471,8 @@ img { max-width: 100%; display: block; }
   .admin-table { font-size: 0.8rem; display: block; overflow-x: auto; }
   .auth-card { padding: 1.5rem; }
   .otp-input-group input { width: 42px; height: 48px; font-size: 1.2rem; }
+  .search-container { flex-direction: column; gap: 10px; }
+  .search-input, #searchBtn { width: 100%; flex: none; }
 }
 @media (max-width: 480px) {
   .products-grid { grid-template-columns: 1fr 1fr; }
@@ -651,4 +653,71 @@ img { max-width: 100%; display: block; }
     width: calc(100vw - 40px);
     height: 400px;
   }
+}
+
+/* ===== SMART SEARCH ===== */
+.search-container {
+  display: flex; gap: 12px; justify-content: center; margin: 0 auto 2rem;
+  max-width: 700px; width: 100%;
+}
+.search-input {
+  flex: 3; padding: 14px 24px;
+  border-radius: 30px; border: 2px solid var(--border);
+  font-size: 1rem; transition: var(--transition);
+  background: var(--bg-card);
+}
+#searchBtn {
+  flex: 1;
+  border-radius: 30px;
+  white-space: nowrap;
+}
+.search-input:focus {
+  border-color: var(--primary); outline: none;
+  box-shadow: 0 0 10px rgba(108,99,255,0.1);
+}
+.search-filters {
+  text-align: center; margin-bottom: 2rem; font-size: 0.9rem;
+}
+.filter-tag {
+  display: inline-block; background: rgba(108,99,255,0.1);
+  color: var(--primary); padding: 4px 12px; border-radius: 20px;
+  margin: 0 4px; font-weight: 500; font-size: 0.85rem;
+}
+
+/* ===== REVIEWS & SENTIMENT ===== */
+.tag-positive { background: rgba(46,213,115,0.15); color: #1a9d4a; }
+.tag-neutral { background: rgba(142,144,166,0.15); color: var(--text-secondary); }
+.tag-negative { background: rgba(255,71,87,0.15); color: var(--danger); }
+
+.review-stats span {
+  display: inline-block; padding: 6px 14px; border-radius: 20px;
+  font-weight: 600; font-size: 0.85rem; margin-right: 10px;
+}
+
+.ai-summary-box {
+  background: linear-gradient(135deg, rgba(108,99,255,0.05) 0%, rgba(78,205,196,0.05) 100%);
+  border: 1px solid rgba(108,99,255,0.2);
+  border-radius: var(--radius-md); padding: 1.5rem; margin-bottom: 2rem;
+  box-shadow: inset 0 0 20px rgba(255,255,255,0.5);
+  backdrop-filter: blur(10px);
+}
+.ai-summary-header {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 0.5rem;
+  color: var(--primary-dark); font-size: 1.1rem;
+}
+.ai-summary-box p {
+  color: var(--text-secondary); font-size: 1rem; line-height: 1.5;
+  font-weight: 500;
+}
+
+/* ── Smart Search: subtle fallback hint ──────────────────────────────── */
+/* Shown only when the backend falls back to related suggestions.         */
+/* Never shows AI labels, intent pills, or keyword dumps.                */
+.search-hint {
+  display: inline-block;
+  font-size: 0.82rem;
+  font-style: italic;
+  color: var(--text-secondary);
+  opacity: 0.75;
+  letter-spacing: 0.01em;
 }

@@ -116,6 +116,23 @@
                 grid-template-columns: repeat(2, 1fr);
             }
         }
+
+        /* AI Summary Enhancements */
+        .ai-loading {
+            animation: pulse 1.5s infinite ease-in-out;
+            color: var(--text-muted) !important;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .ai-summary-box {
+            border-left: 4px solid var(--primary) !important;
+            transition: all 0.3s ease;
+        }
     </style>
 </head>
 
@@ -152,6 +169,46 @@
                         <button class="btn btn-add-cart" id="addToCartBtn">🛒 Add to Cart</button>
                         <button class="btn btn-buy-now" id="buyNowBtn">⚡ Buy Now</button>
                     </div>
+                </div>
+            </div>
+
+            <!-- Customer Reviews Section -->
+            <div class="reviews-section" id="reviewsSection" style="display:none; margin-top:3rem; padding-top:2rem; border-top:1px solid #e5e7eb;">
+                <h2><span>💬</span> Customer Reviews</h2>
+                
+                <!-- AI Review Summary Box -->
+                <div class="ai-summary-box" id="aiSummaryBox" style="display:none;">
+                    <div class="ai-summary-header">
+                        <span class="ai-icon">✨</span> <strong>AI Summary</strong>
+                    </div>
+                    <p id="aiSummaryText">Generating summary...</p>
+                </div>
+                
+                <!-- Review Statistics -->
+                <div class="review-stats" id="reviewStats" style="display:none; margin-bottom: 1.5rem;">
+                    <span class="tag-positive" id="statPos">Positive: 0</span>
+                    <span class="tag-neutral" id="statNeu">Neutral: 0</span>
+                    <span class="tag-negative" id="statNeg">Negative: 0</span>
+                </div>
+
+                <!-- Add Review Form -->
+                <div class="add-review-box" id="addReviewBox" style="margin-bottom: 2rem;">
+                    <h4>Write a Review</h4>
+                    <form id="reviewForm">
+                        <div class="form-group" style="margin-bottom: 0.5rem;">
+                            <label>Rating (1-5)</label>
+                            <input type="number" id="reviewRating" min="1" max="5" value="5" required style="width: 80px; padding: 0.4rem;">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0.5rem;">
+                            <textarea id="reviewComment" rows="3" placeholder="What did you like or dislike?" required style="width: 100%; padding: 0.5rem;"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary" id="submitReviewBtn">Submit Review</button>
+                    </form>
+                </div>
+
+                <!-- Reviews List -->
+                <div class="reviews-list" id="reviewsList">
+                    <p>No reviews yet. Be the first to review!</p>
                 </div>
             </div>
 

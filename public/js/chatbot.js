@@ -61,15 +61,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    let isRequesting = false;
+
     async function sendMessage() {
+        if (isRequesting) return;
         const text = chatInput.value.trim();
         if (!text) return;
 
+        // Prevent rapid clicking and spam
+        isRequesting = true;
+        chatInput.disabled = true;
+        sendBtn.disabled = true;
+        const originalBtnText = sendBtn.textContent;
+        sendBtn.textContent = '...';
+
         appendMessage('user', text);
         chatInput.value = '';
-        chatInput.focus();
         
-        // Show typing indicator
+        // Show subtle typing indicator
         const typingId = showTypingIndicator();
 
         try {
@@ -78,13 +87,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ message: text })
             });
+            
+            if (!response.ok) throw new Error('Network response was not ok');
+            
             const data = await response.json();
             
             removeTypingIndicator(typingId);
-            appendMessage('bot', data.reply || "Something went wrong.");
+            appendMessage('bot', data.reply || "I'm here to help! How else can I assist you?");
         } catch (error) {
+            console.error('Chat error:', error);
             removeTypingIndicator(typingId);
-            appendMessage('bot', "Connection error. Please try again later.");
+            appendMessage('bot', "Hi! I'm having a bit of trouble connecting, but I can help you with shipping, payments, and returns. What can I do for you?");
+        } finally {
+            // Cleanly re-enable after a short natural delay
+            setTimeout(() => {
+                isRequesting = false;
+                chatInput.disabled = false;
+                sendBtn.disabled = false;
+                sendBtn.textContent = originalBtnText;
+                if (!chatWindow.classList.contains('hidden')) {
+                    chatInput.focus();
+                }
+                scrollToBottom();
+            }, 600);
         }
     }
 

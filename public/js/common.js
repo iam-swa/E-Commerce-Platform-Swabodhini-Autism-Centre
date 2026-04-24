@@ -26,13 +26,28 @@ async function apiCall(url, options = {}) {
         headers['Content-Type'] = 'application/json';
     }
     const res = await fetch(url, { ...options, headers });
-    const data = await res.json();
+
+    // Guard: only parse JSON when the server actually sends JSON.
+    // Without this, an HTML error page (e.g. Flask 500 debug page) causes
+    // "Unexpected token '<'" and the error message becomes unusable.
+    const contentType = res.headers.get('content-type') || '';
+    let data;
+    if (contentType.includes('application/json')) {
+        data = await res.json();
+    } else {
+        // Server returned HTML/text — surface a clean error instead of a
+        // cryptic JSON parse failure.
+        const text = await res.text();
+        console.error(`[API] Non-JSON response from ${url} (${res.status}):`, text.slice(0, 300));
+        throw new Error(`Server error (${res.status}). Please try again.`);
+    }
+
     if (res.status === 401) {
         localStorage.clear();
         window.location.href = '/';
         return;
     }
-    if (!res.ok) throw new Error(data.message || 'Something went wrong');
+    if (!res.ok) throw new Error(data.message || data.error || 'Something went wrong');
     return data;
 }
 

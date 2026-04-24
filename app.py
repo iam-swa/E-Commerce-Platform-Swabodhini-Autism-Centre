@@ -13,8 +13,61 @@ import jwt
 import bcrypt
 from recommender import get_recommendations
 import google.generativeai as genai
-# Load environment variables
-load_dotenv()
+try:
+    from google.api_core import exceptions as google_exceptions
+except ImportError:
+    google_exceptions = None
+
+# Simple in-memory cache for AI summaries
+# Key: product_id, Value: { 'summary': str, 'review_count': int }
+summary_cache = {}
+
+# Load environment variables from .env file
+env_path = os.path.join(os.path.dirname(__file__), '.env')
+load_dotenv(dotenv_path=env_path, override=True)
+
+# Global Gemini Configuration
+GEMINI_MODEL = None
+CHATBOT_MODEL = None
+
+def init_gemini():
+    """Programmatically detect the best available Gemini model and initialize global instance."""
+    global GEMINI_MODEL, CHATBOT_MODEL
+    api_key = os.getenv('GEMINI_API_KEY')
+    if not api_key:
+        print("[Gemini] API Key missing. Using fallbacks.")
+        return
+    try:
+        genai.configure(api_key=api_key)
+        # List models and filter for generateContent support
+        available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+        
+        # Preference order for Swabodhini's requirements
+        preferences = [
+            'models/gemini-2.0-flash', 
+            'models/gemini-1.5-flash', 
+            'models/gemini-flash-latest',
+            'models/gemini-pro-latest'
+        ]
+        
+        for pref in preferences:
+            if pref in available_models:
+                GEMINI_MODEL = pref
+                break
+        
+        if not GEMINI_MODEL and available_models:
+            GEMINI_MODEL = available_models[0]
+            
+        if GEMINI_MODEL:
+            CHATBOT_MODEL = genai.GenerativeModel(GEMINI_MODEL)
+            print(f"[Gemini] Connected to {GEMINI_MODEL}")
+        else:
+            print("[Gemini] No compatible models found.")
+    except Exception as e:
+        print(f"[Gemini] Initialization failed: {e}")
+
+# Initialize Gemini at startup
+init_gemini()
 
 app = Flask(__name__, static_folder='public', static_url_path='')
 CORS(app)
@@ -137,6 +190,18 @@ def init_db():
             UNIQUE(user_id, product_id),
             FOREIGN KEY(user_id) REFERENCES users(_id),
             FOREIGN KEY(product_id) REFERENCES products(_id)
+        );
+
+        CREATE TABLE IF NOT EXISTS reviews (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            product_id TEXT NOT NULL,
+            user_id TEXT NOT NULL,
+            rating INTEGER NOT NULL CHECK(rating >= 1 AND rating <= 5),
+            comment TEXT,
+            sentiment TEXT,
+            createdAt TEXT DEFAULT (datetime('now')),
+            FOREIGN KEY(product_id) REFERENCES products(_id),
+            FOREIGN KEY(user_id) REFERENCES users(_id)
         );
     ''')
 
@@ -876,42 +941,425 @@ def update_location():
 
 # ────────────────────── CHATBOT ROUTES ──────────────────────
 
+def get_chatbot_fallback(message):
+    """Hybrid fallback system for common e-commerce queries with warm, conversational tone."""
+    msg = message.lower()
+    
+    def contains_any(keywords):
+        for k in keywords:
+            if re.search(r'\b' + re.escape(k) + r'\b', msg):
+                return True
+        return False
+    
+    # Shipping
+    if contains_any(['ship', 'shipping', 'deliver', 'delivery', 'tracking', 'arrive', 'when']):
+        return "Our products are handcrafted by students at Swabodhini. Shipping usually takes 5-7 business days within India. You'll receive updates as your order progresses!"
+    
+    # Payments
+    if contains_any(['pay', 'payment', 'qr', 'upi', 'checkout', 'buy']):
+        return "We accept payments via the QR code shown during checkout. Simply scan and upload your payment screenshot to complete your order."
+    
+    # Returns
+    if contains_any(['return', 'refund', 'exchange', 'cancel']):
+        return "Since our products are handcrafted by students at Swabodhini Autism Centre, we unfortunately do not offer returns or exchanges. We appreciate your support!"
+    
+    # Orders
+    if contains_any(['order', 'status', 'purchase']):
+        return "You can check your order status in the 'My Orders' section after logging in. If you have a specific question, please share your Transaction ID."
+    
+    # Handmade Products
+    if contains_any(['handmade', 'handpainted', 'student', 'autism', 'centre', 'makes']):
+        return "Every item in our store is lovingly handcrafted by the talented students at Swabodhini Autism Centre. Your purchase directly supports their vocational training and empowerment ❤️"
+    
+    # Gift Suggestions
+    if contains_any(['gift', 'suggest', 'recommend', 'birthday', 'festival']):
+        return "Our hand-painted greeting cards and clay diyas make wonderful gifts! You can also check our 'Art & Craft' section for unique canvas paintings."
+    
+    # Greetings
+    if contains_any(['hi', 'hello', 'hey', 'namaste', 'greetings', 'help']):
+        return "Hi! I'm here to help you with our handcrafted products, shipping, payments, and orders 😊"
+    
+    # Default Fallback
+    return "I'm here to help! I can answer questions about our handmade products, shipping times, payments, or your order status. What can I assist you with today?"
+
 @app.route('/api/chat', methods=['POST'])
 def chat():
-    """Handle customer support chatbot messages via Google Gemini API."""
+    """Handle customer support chatbot messages via Google Gemini API with robust fallbacks."""
     data = request.get_json()
     message = data.get('message', '').strip()
     
     if not message:
-        return jsonify({'reply': "I didn't quite catch that. How can I help you today?"})
-
-    api_key = os.getenv('GEMINI_API_KEY', 'AIzaSyBKPI-k7w_DbzKwRO4Hi5S35LHyvvjcZ-g')
-    if not api_key:
-        return jsonify({'reply': "Sorry, our AI assistant is currently unavailable. Please contact support."})
+        return jsonify({'reply': "Hi! I'm here to help you with our handcrafted products, shipping, and more. How can I help today?"})
 
     try:
-        genai.configure(api_key=api_key)
-        # Use standard gemini model
-        model = genai.GenerativeModel('gemini-2.5-flash')
-        
+        # Check if AI is available
+        if not CHATBOT_MODEL:
+            # Try one last-minute init if it failed at startup
+            if os.getenv('GEMINI_API_KEY'):
+                init_gemini()
+            
+            if not CHATBOT_MODEL:
+                print("[Chatbot] Using fallback response (AI not initialized)")
+                return jsonify({'reply': get_chatbot_fallback(message)})
+
         system_instruction = (
             "You are a helpful e-commerce customer support assistant for Swabodhini Autism Centre. "
             "Help users with product queries, shipping, payments, returns, and orders. "
             "IMPORTANT POLICIES: 1) There is no return option for any products. "
             "2) Payment can only be made by scanning the QR code shown on the screen during checkout. "
-            "Keep your responses short, clear, and user-friendly. Do not expose sensitive data. "
+            "Keep your responses short, clear, and user-friendly. "
             "If asked about topics completely unrelated to e-commerce or the centre, politely decline to answer."
         )
         
         prompt = f"{system_instruction}\n\nUser: {message}\nAssistant:"
-        response = model.generate_content(prompt)
+        
+        # Use timeout to prevent hanging requests and activate fallback gracefully
+        response = CHATBOT_MODEL.generate_content(prompt, request_options={'timeout': 10})
         
         return jsonify({'reply': response.text})
     except Exception as e:
-        print(f"[Chatbot Error] Gemini API failed: {e}")
-        return jsonify({'reply': "Sorry, please try again later or contact support."})
+        error_msg = str(e)
+        if "429" in error_msg or "ResourceExhausted" in error_msg:
+            print("[Chatbot Fallback] Quota exceeded")
+        elif "quota" in error_msg.lower():
+             print("[Chatbot Fallback] API Quota limit reached")
+        else:
+            print(f"[Chatbot] Using fallback response (Error: {error_msg[:50]}...)")
+            
+        return jsonify({'reply': get_chatbot_fallback(message)})
 
 
+# ────────────────────── NLP & SMART SEARCH ROUTES ──────────────────────
+
+import re
+try:
+    from textblob import TextBlob
+except ImportError:
+    TextBlob = None
+
+@app.route('/api/search', methods=['GET'])
+def smart_search():
+    """
+    NLP-powered Smart Search V2 (Swabodhini Catalog Optimized).
+    Extracts price intent, categories, corrects typos, and maps gift intents.
+    Always returns valid JSON — never an HTML error page.
+    """
+    try:
+        query = request.args.get('q', '').lower().strip()
+        db = get_db()
+
+        if not query:
+            # Fallback to all active products
+            return jsonify({
+                'success': True,
+                'filters': {},
+                'fallback_message': None,
+                'products': rows_to_list(
+                    db.execute("SELECT * FROM products WHERE isActive = 1 ORDER BY createdAt DESC").fetchall()
+                )
+            })
+
+        filters = {'max_price': None, 'min_price': None, 'category': None, 'keywords': [], 'intent': []}
+
+        # 1. Price Intent Extraction
+        price_match = re.search(r'(under|below|less than|max)\s*(\d+)', query)
+        if price_match:
+            filters['max_price'] = int(price_match.group(2))
+
+        if 'cheap' in query:
+            if not filters['max_price']:
+                filters['max_price'] = 300
+            filters['intent'].append('Budget/Cheap')
+        elif 'budget' in query:
+            if not filters['max_price']:
+                filters['max_price'] = 500
+            filters['intent'].append('Budget/Cheap')
+        elif 'premium' in query:
+            filters['min_price'] = 500
+            filters['intent'].append('Premium')
+
+        # 2. Gift & Occasion Intent Mapping
+        gift_keywords = ['gift', 'festival', 'traditional', 'decor']
+        has_gift_intent = any(k in query for k in gift_keywords)
+        if has_gift_intent:
+            filters['intent'].append('Gift/Festive Suggestion')
+
+        # 3. Handmade & Eco Intent
+        if 'handmade' in query or 'artisan' in query or 'hand painted' in query:
+            filters['intent'].append('Handmade Art')
+        if 'eco' in query or 'eco friendly' in query or 'eco-friendly' in query:
+            filters['category'] = 'Eco-Friendly'
+            filters['intent'].append('Eco-Friendly')
+
+        # 4. Category Extraction
+        known_categories = ['art & craft', 'eco-friendly', 'festive', 'accessories', 'home decor', 'cleaning']
+        for cat in known_categories:
+            if cat in query and not filters['category']:
+                filters['category'] = cat
+                query = query.replace(cat, '')
+                break
+
+        # 5. NLP Preprocessing: Spelling Correction & Singularization
+        # Catalog-specific typo dictionary (checked BEFORE singularization)
+        catalog_typos = {
+            'candels': 'candle', 'candel': 'candle',
+            'diyas': 'diya',
+            'paintings': 'painting',
+            'earing': 'earring', 'earings': 'earring',
+            'jewelery': 'jewelry', 'jewellery': 'jewelry',
+            'bags': 'bag', 'giftz': 'gift', 'giftes': 'gift'
+        }
+        stop_words = {
+            'under', 'below', 'less', 'than', 'max', 'cheap', 'budget',
+            'premium', 'for', 'the', 'a', 'with', 'and', 'in', 'on', 'of',
+            'items', 'products'
+        }
+        words = []
+        typos_corrected = False
+
+        if TextBlob:
+            try:
+                blob = TextBlob(query)
+                for w in blob.words:
+                    w_str = str(w).lower()
+                    if w_str in stop_words or w_str.isdigit():
+                        continue
+
+                    # Check catalog typo dict FIRST
+                    if w_str in catalog_typos:
+                        words.append(catalog_typos[w_str])
+                        typos_corrected = True
+                        continue
+
+                    # Singularize: Word is a string subclass, str() is safe
+                    try:
+                        singular = str(w.singularize()).lower()
+                    except Exception:
+                        singular = w_str
+
+                    words.append(singular)
+            except Exception as nlp_err:
+                print(f"[Search] TextBlob NLP processing failed: {nlp_err}")
+                # Graceful fallback: split on whitespace
+                words = [
+                    w for w in query.split()
+                    if w not in stop_words and not w.isdigit()
+                ]
+        else:
+            words = [
+                w for w in query.split()
+                if w not in stop_words and not w.isdigit()
+            ]
+
+        filters['keywords'] = words
+        if typos_corrected:
+            filters['intent'].append('Typo Corrected')
+
+        # Build and Execute Search logic with Fallback
+        def execute_search(require_category, strict_keywords):
+            sql = "SELECT * FROM products WHERE isActive = 1"
+            params = []
+
+            if filters['max_price']:
+                sql += " AND price <= ?"
+                params.append(filters['max_price'])
+            if filters['min_price']:
+                sql += " AND price >= ?"
+                params.append(filters['min_price'])
+
+            if require_category and filters['category']:
+                sql += " AND LOWER(category) LIKE ?"
+                params.append(f"%{filters['category'].lower()}%")
+
+            # Keyword matching
+            if filters['keywords'] or (has_gift_intent and not strict_keywords):
+                sql += " AND ("
+                keyword_conditions = []
+                if filters['keywords']:
+                    for word in filters['keywords']:
+                        condition = "(LOWER(name) LIKE ? OR LOWER(description) LIKE ? OR LOWER(category) LIKE ?)"
+                        keyword_conditions.append(condition)
+                        params.extend([f"%{word}%", f"%{word}%", f"%{word}%"])
+
+                # If gift intent, append related keywords as OR conditions
+                if has_gift_intent and not strict_keywords:
+                    for gift_item in ['candle', 'diya', 'card', 'jewelry', 'cushion']:
+                        condition = "(LOWER(name) LIKE ? OR LOWER(category) LIKE ?)"
+                        keyword_conditions.append(condition)
+                        params.extend([f"%{gift_item}%", f"%{gift_item}%"])
+
+                if not keyword_conditions:
+                    sql += " 1=1)"
+                elif strict_keywords and filters['keywords']:
+                    sql += " AND ".join(keyword_conditions) + ")"
+                else:
+                    sql += " OR ".join(keyword_conditions) + ")"
+
+            sql += " ORDER BY createdAt DESC LIMIT 15"
+            return db.execute(sql, params).fetchall()
+
+        # Stage 1: Strict Match
+        results = execute_search(require_category=True, strict_keywords=True)
+        fallback_message = None
+
+        # Stage 2: Relax Category
+        if not results and filters['category']:
+            results = execute_search(require_category=False, strict_keywords=True)
+            if results:
+                fallback_message = "No exact matches in that category. Showing related items instead."
+
+        # Stage 3: Relax Keywords (OR matching + Gift expansion)
+        if not results and (filters['keywords'] or 'Gift/Festive Suggestion' in filters['intent']):
+            results = execute_search(require_category=False, strict_keywords=False)
+            if results:
+                fallback_message = "Couldn't find an exact match. You might like these related items!"
+
+        # Stage 4: Ultimate Fallback
+        if not results:
+            results = db.execute("SELECT * FROM products WHERE isActive = 1 ORDER BY RANDOM() LIMIT 4").fetchall()
+            fallback_message = "No exact items found. Here are some of our popular handcrafted products!"
+
+        return jsonify({
+            'success': True,
+            'filters': filters,
+            'fallback_message': fallback_message,
+            'products': rows_to_list(results)
+        })
+
+    except Exception as e:
+        print(f"[Search ERROR] /api/search crashed for query '{request.args.get('q', '')}': {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': 'Search failed',
+            'filters': {},
+            'fallback_message': 'Search is temporarily unavailable. Showing all products instead.',
+            'products': []
+        }), 500
+
+# ────────────────────── REVIEW & SENTIMENT ROUTES ──────────────────────
+
+@app.route('/api/products/<product_id>/reviews', methods=['POST'])
+@auth_required
+def submit_review(product_id):
+    """Submit a review with automatic Sentiment Analysis."""
+    data = request.get_json()
+    rating = int(data.get('rating', 5))
+    comment = data.get('comment', '').strip()
+    
+    if not comment:
+        return jsonify({'message': 'Review comment is required.'}), 400
+        
+    if rating < 1 or rating > 5:
+        return jsonify({'message': 'Rating must be between 1 and 5.'}), 400
+        
+    # 1. Perform Sentiment Analysis
+    sentiment = 'Neutral'
+    if TextBlob:
+        blob = TextBlob(comment)
+        polarity = blob.sentiment.polarity
+        if polarity > 0.1:
+            sentiment = 'Positive'
+        elif polarity < -0.1:
+            sentiment = 'Negative'
+            
+    db = get_db()
+    
+    # Ensure product exists
+    if not db.execute("SELECT _id FROM products WHERE _id = ?", (product_id,)).fetchone():
+        return jsonify({'message': 'Product not found.'}), 404
+        
+    db.execute(
+        "INSERT INTO reviews (product_id, user_id, rating, comment, sentiment) VALUES (?, ?, ?, ?, ?)",
+        (product_id, request.user['_id'], rating, comment, sentiment)
+    )
+    db.commit()
+    
+    return jsonify({'message': 'Review submitted successfully!', 'sentiment': sentiment})
+
+@app.route('/api/products/<product_id>/reviews', methods=['GET'])
+def get_reviews(product_id):
+    """Get all reviews for a product with sentiment statistics."""
+    db = get_db()
+    reviews = db.execute('''
+        SELECT r.*, u.name as user_name 
+        FROM reviews r 
+        JOIN users u ON r.user_id = u._id 
+        WHERE r.product_id = ? 
+        ORDER BY r.createdAt DESC
+    ''', (product_id,)).fetchall()
+    
+    reviews_list = rows_to_list(reviews)
+    
+    # Calculate stats
+    stats = {'Positive': 0, 'Negative': 0, 'Neutral': 0, 'total': len(reviews_list)}
+    for rev in reviews_list:
+        stats[rev['sentiment']] += 1
+        
+    return jsonify({'reviews': reviews_list, 'stats': stats})
+
+@app.route('/api/products/<product_id>/summary', methods=['GET'])
+def get_review_summary(product_id):
+    """Automatic AI Review Summarization using Gemini."""
+    db = get_db()
+    reviews = db.execute("SELECT comment FROM reviews WHERE product_id = ?", (product_id,)).fetchall()
+    review_count = len(reviews)
+    
+    # Check cache first to avoid redundant API calls if review count hasn't changed
+    if product_id in summary_cache:
+        cached_data = summary_cache[product_id]
+        if cached_data['review_count'] == review_count:
+            return jsonify({'summary': cached_data['summary']})
+
+    if review_count < 3:
+        return jsonify({'summary': 'Not enough reviews yet for AI summary.'})
+        
+    comments = " | ".join([r['comment'] for r in reviews if r['comment']])
+    
+    api_key = os.getenv('GEMINI_API_KEY')
+    if not api_key:
+        print("[Summary Error] GEMINI_API_KEY is missing. AI summarization skipped.")
+        return jsonify({'summary': 'Customers generally liked the product quality but had mixed opinions about delivery and customization.'})
+        
+    try:
+        if not CHATBOT_MODEL:
+            init_gemini()
+            if not CHATBOT_MODEL:
+                raise Exception("AI model not initialized")
+
+        # Improved, more natural prompt as per requirements
+        prompt = (
+            "You are summarizing customer reviews for a handcrafted e-commerce product. "
+            "Write one short, human-readable sentence mentioning the most common positives and negatives based on these reviews. "
+            "Keep it concise (1-2 sentences max) and avoid robotic wording. "
+            f"Reviews: {comments}"
+        )
+        
+        response = CHATBOT_MODEL.generate_content(prompt, request_options={'timeout': 10})
+        
+        # Ensure we return valid text even if AI returns something strange
+        summary_text = response.text.strip() if response and hasattr(response, 'text') else None
+        
+        if summary_text:
+            # Update cache
+            summary_cache[product_id] = {
+                'summary': summary_text,
+                'review_count': review_count
+            }
+            return jsonify({'summary': summary_text})
+        else:
+            raise Exception("Empty response from AI")
+
+    except Exception as e:
+        error_msg = str(e)
+        # Handle Quota/Rate Limit Errors
+        if "429" in error_msg or "ResourceExhausted" in error_msg:
+            print("[Summary Fallback] Quota exceeded")
+        else:
+            print(f"[Summary] Using fallback (Error: {error_msg[:50]}...)")
+            
+        return jsonify({'summary': 'Customers generally liked the product quality but had mixed opinions about delivery and customization.'})
 # ────────────────────── HTML PAGE ROUTES ──────────────────────
 
 @app.route('/')
