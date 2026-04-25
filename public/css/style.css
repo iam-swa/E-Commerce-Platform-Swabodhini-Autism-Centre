@@ -52,7 +52,7 @@ img { max-width: 100%; display: block; }
 
 /* ===== NAVBAR ===== */
 .navbar {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+  position: fixed; top: 0; left: 0; right: 0; z-index: 5000;
   background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border);
@@ -441,7 +441,7 @@ img { max-width: 100%; display: block; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* Toast */
-.toast-container { position: fixed; top: 80px; right: 20px; z-index: 3000; display: flex; flex-direction: column; gap: 8px; }
+.toast-container { position: fixed; top: 80px; right: 20px; z-index: 6000; display: flex; flex-direction: column; gap: 8px; }
 .toast {
   padding: 12px 20px; border-radius: var(--radius-sm);
   font-size: 0.9rem; font-weight: 500; color: #fff;
@@ -457,7 +457,7 @@ img { max-width: 100%; display: block; }
   .navbar { padding: 0 1rem; }
   .nav-brand h1 { font-size: 0.95rem; }
   .nav-links { display: none; position: fixed; top: 70px; left: 0; right: 0; background: #FFFFFF; border-bottom: 1px solid var(--border); flex-direction: column; padding: 1rem; gap: 4px; }
-  .nav-links.open { display: flex; }
+  .nav-links.open { display: flex; z-index: 4500; }
   .nav-menu-btn { display: block; }
   .hero h2 { font-size: 1.6rem; }
   .products-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1rem; }
@@ -490,6 +490,7 @@ img { max-width: 100%; display: block; }
   display: flex;
   flex-direction: column;
   align-items: flex-end;
+  pointer-events: none;
 }
 
 .chatbot-btn {
@@ -505,6 +506,7 @@ img { max-width: 100%; display: block; }
   align-items: center;
   justify-content: center;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
+  pointer-events: auto;
 }
 
 .chatbot-btn:hover {
@@ -525,6 +527,7 @@ img { max-width: 100%; display: block; }
   border: 1px solid var(--border);
   transition: opacity 0.3s ease, transform 0.3s ease;
   transform-origin: bottom right;
+  pointer-events: auto;
 }
 
 .chat-window.hidden {

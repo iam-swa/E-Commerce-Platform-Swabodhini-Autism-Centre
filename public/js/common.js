@@ -107,11 +107,15 @@ function formatPrice(price) {
     return `₹${Number(price).toLocaleString('en-IN')}`;
 }
 
-// Product image fallback
+// Product image fallback — uses a deterministic seed so the same product
+// always shows the same fallback image (no more "random" images on reload).
 function getProductImage(img) {
-    return img && img !== '/images/placeholder.png'
-        ? img
-        : `https://picsum.photos/seed/${Math.random().toString(36).substr(2, 6)}/400/300`;
+    if (img && img !== '/images/placeholder.png') {
+        return img;
+    }
+    // Generate a stable seed from the image path (or 'default')
+    const seed = (img || 'default').split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+    return `https://picsum.photos/seed/swa${seed}/400/300`;
 }
 
 // ── Location: request once per session, send to backend ────────────────────
