@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let currentUserId = null;
     try {
-        const userStr = localStorage.getItem('user');
+        const userStr = sessionStorage.getItem('user');
         if (userStr) {
             const user = JSON.parse(userStr);
             currentUserId = user.id || user._id;

@@ -992,6 +992,57 @@ def get_products_by_category(category_query):
 def get_products_under_budget(budget):
     return [p for p in products_catalog if p['price'] <= budget]
 
+def is_product_query(query_lower):
+    words = set(re.findall(r'\b\w+\b', query_lower))
+    return bool(words & {'available', 'have', 'sell', 'buy', 'price', 'cost'})
+
+def extract_product_name(query_lower):
+    stop_words = {'do', 'you', 'have', 'sell', 'buy', 'show', 'me', 'price', 'cost', 'what', 'is', 'the', 'of', 'for', 'are', 'there', 'any', 'can', 'i', 'get', 'a', 'an', 'some', 'please', 'we', 'looking', 'want', 'to', 'how', 'much', 'available'}
+    remaining = [w for w in re.findall(r'\b\w+\b', query_lower) if w not in stop_words]
+    if remaining:
+        return " ".join(remaining)
+    return "that product"
+
+def suggest_available_products(requested_item):
+    suggested_cat = None
+    remaining = set(requested_item.split())
+    if bool(remaining & {'shirt', 'tshirt', 'dress', 'clothes', 'fashion', 'wear', 'shoes', 'apparel', 'watch'}):
+        suggested_cat = 'Accessories'
+    elif bool(remaining & {'furniture', 'table', 'chair', 'bed', 'sofa', 'lamp', 'desk'}):
+        suggested_cat = 'Home Decor'
+    elif bool(remaining & {'perfume', 'makeup', 'beauty', 'cosmetics', 'soap'}):
+        suggested_cat = 'Accessories'
+    elif bool(remaining & {'food', 'cake', 'chocolate', 'sweets', 'snacks'}):
+        suggested_cat = 'Festive'
+    elif bool(remaining & {'phone', 'laptop', 'electronics', 'computer', 'mobile'}):
+        suggested_cat = 'Art & Craft'
+        
+    import random
+    if suggested_cat:
+        prods = get_products_by_category(suggested_cat)
+        other_prods = [p for p in products_catalog if p not in prods]
+        selected = prods[:2] + random.sample(other_prods, max(0, 4 - len(prods[:2])))
+    else:
+        selected = random.sample(products_catalog, min(len(products_catalog), 4))
+        
+    if requested_item == "that product":
+        resp = "This product is currently unavailable. 😊\n\nCheck out some of our other handcrafted products:\n\n"
+    else:
+        resp = f"This product '{requested_item}' is currently unavailable. 😊\n\nCheck out some of our other handcrafted products:\n\n"
+        
+    for p in selected:
+        icon = "🎁"
+        if "Candles" in p['name']: icon = "🕯️"
+        elif "Diyas" in p['name']: icon = "🪔"
+        elif "Earrings" in p['name'] or "Jewelry" in p['name']: icon = "💍"
+        elif "Painting" in p['name'] or "Cards" in p['name']: icon = "🎨"
+        elif "Phenyl" in p['name']: icon = "🧴"
+        elif "Bags" in p['name']: icon = "🛍️"
+        elif "Cushion" in p['name']: icon = "🛏️"
+        resp += f"{icon} {p['name']} — ₹{p['price']}\n"
+        
+    return resp.strip()
+
 def generate_product_response(message):
     msg_lower = message.lower()
     words = set(re.findall(r'\b\w+\b', msg_lower))
@@ -1020,7 +1071,7 @@ def generate_product_response(message):
         if matched_product:
             return f"The price of {matched_product['name']} is ₹{matched_product['price']}. It's from our {matched_product['category']} collection! 🛍️"
         elif bool(words & {'price', 'cost', 'much'}):
-            return "Sorry, I couldn't find that product in our current collection. Please browse our handcrafted catalog for available items 😊"
+            return suggest_available_products(extract_product_name(msg_lower))
 
     # 2. Recommendations
     if is_recommend or budget:
@@ -1071,8 +1122,8 @@ def generate_product_response(message):
                     resp += f"• {p['name']} — ₹{p['price']}\n"
                 return resp.strip()
             
-        if bool(words & {'sell', 'have', 'buy'}):
-            return "Sorry, I couldn't find that product in our current collection. Please browse our handcrafted catalog for available items 😊"
+        if bool(words & {'sell', 'have', 'buy', 'available'}):
+            return suggest_available_products(extract_product_name(msg_lower))
 
     return None
 

@@ -1,8 +1,8 @@
 // ===== Admin Dashboard JavaScript =====
 
 // ===== AUTH & HELPERS =====
-function getToken() { return localStorage.getItem('token'); }
-function getUser() { return JSON.parse(localStorage.getItem('user') || '{}'); }
+function getToken() { return sessionStorage.getItem('token'); }
+function getUser() { return JSON.parse(sessionStorage.getItem('user') || '{}'); }
 
 function formatPrice(price) {
     return `₹${Number(price).toLocaleString('en-IN')}`;
@@ -24,7 +24,8 @@ async function apiCall(url, options = {}) {
     const res = await fetch(url, { ...options, headers });
     const data = await res.json();
     if (res.status === 401 || res.status === 403) {
-        localStorage.clear();
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('user');
         window.location.href = '/';
         return;
     }
@@ -127,7 +128,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Logout
     document.getElementById('logoutBtn').addEventListener('click', () => {
-        localStorage.clear();
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('user');
         window.location.href = '/';
     });
 

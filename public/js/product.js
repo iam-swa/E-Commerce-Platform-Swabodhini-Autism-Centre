@@ -68,7 +68,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         loadSummary(productId);
 
         // ── Review submission ────────────────────────────────────────────────
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         if (!token) {
             document.getElementById('addReviewBox').innerHTML = '<p><a href="/">Login to write a review.</a></p>';
         } else {
@@ -122,7 +122,7 @@ document.addEventListener('DOMContentLoaded', async () => {
  */
 async function trackProductView(productId) {
     try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         if (!token) return; // only track logged-in users
         await fetch('/api/track/view', {
             method: 'POST',
@@ -149,7 +149,7 @@ async function loadRecommendations(productId) {
     section.style.display = 'block';
 
     try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const headers = { 'Content-Type': 'application/json' };
         if (token) headers['Authorization'] = `Bearer ${token}`;
 

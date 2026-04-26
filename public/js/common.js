@@ -1,7 +1,7 @@
 // Common utilities used across pages
 
 function checkAuth() {
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
     if (!token) {
         window.location.href = '/';
         return null;
@@ -10,11 +10,11 @@ function checkAuth() {
 }
 
 function getUser() {
-    return JSON.parse(localStorage.getItem('user') || '{}');
+    return JSON.parse(sessionStorage.getItem('user') || '{}');
 }
 
 function getToken() {
-    return localStorage.getItem('token');
+    return sessionStorage.getItem('token');
 }
 
 // API helper
@@ -43,8 +43,8 @@ async function apiCall(url, options = {}) {
     }
 
     if (res.status === 401) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('user');
         window.location.href = '/';
         return;
     }
@@ -88,8 +88,8 @@ function setupNavbar() {
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
         logoutBtn.addEventListener('click', () => {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
+            sessionStorage.removeItem('token');
+            sessionStorage.removeItem('user');
             window.location.href = '/';
         });
     }

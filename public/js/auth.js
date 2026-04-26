@@ -1,6 +1,6 @@
 // Check if user is already logged in
-if (localStorage.getItem('token')) {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
+if (sessionStorage.getItem('token')) {
+    const user = JSON.parse(sessionStorage.getItem('user') || '{}');
     if (user.role === 'admin') {
         window.location.href = '/admin-dashboard';
     } else {
@@ -67,8 +67,8 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
 
         if (!res.ok) throw new Error(data.message);
 
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
+        sessionStorage.setItem('token', data.token);
+        sessionStorage.setItem('user', JSON.stringify(data.user));
 
         showAlert('loginAlert', 'Login successful! Redirecting...', 'success');
         setTimeout(() => {
@@ -123,8 +123,8 @@ document.getElementById('signupForm').addEventListener('submit', async (e) => {
         const data = await res.json();
         if (!res.ok) throw new Error(data.message);
 
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
+        sessionStorage.setItem('token', data.token);
+        sessionStorage.setItem('user', JSON.stringify(data.user));
 
         showAlert('signupAlert', 'Account created! Redirecting...', 'success');
         setTimeout(() => { window.location.href = '/landing'; }, 500);
