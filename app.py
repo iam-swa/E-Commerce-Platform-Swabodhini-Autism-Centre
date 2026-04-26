@@ -943,6 +943,139 @@ def update_location():
     return jsonify({'message': 'Location saved'})
 
 
+# ────────────────────── PRODUCT CATALOG CHATBOT LOGIC ──────────────────────
+
+products_catalog = [
+    {"name": "Handmade Earrings", "price": 150, "category": "Accessories"},
+    {"name": "Hand-Painted Greeting Cards", "price": 150, "category": "Art & Craft"},
+    {"name": "Handmade Paper Bags", "price": 200, "category": "Eco-Friendly"},
+    {"name": "Clay Diyas (Set of 6)", "price": 300, "category": "Festive"},
+    {"name": "Canvas Painting - Nature", "price": 1200, "category": "Art & Craft"},
+    {"name": "Beaded Jewelry Set", "price": 450, "category": "Accessories"},
+    {"name": "Embroidered Cushion Covers", "price": 550, "category": "Home Decor"},
+    {"name": "Organic Phenyl (1L)", "price": 180, "category": "Cleaning"},
+    {"name": "Handmade Candles (Set of 4)", "price": 350, "category": "Home Decor"}
+]
+
+def find_product_by_name(query):
+    query_lower = query.lower()
+    q_words = set(re.findall(r'\b\w+\b', query_lower))
+    
+    # Exclude common words to avoid misfires
+    stop_words = {'set', 'of', 'and', 'with', 'the', 'for', 'a', 'an', 'in', 'on', 'have', 'sell', 'buy', 'show', 'price', 'what', 'is', 'much', 'do', 'you', 'are', 'under', 'below'}
+    
+    for p in products_catalog:
+        p_name_lower = p['name'].lower()
+        p_words = set(re.findall(r'\b\w+\b', p_name_lower)) - stop_words
+        
+        for q in q_words:
+            if q in stop_words or len(q) < 3: 
+                continue
+                
+            q_singular = q[:-1] if q.endswith('s') else q
+            q_plural = q + 's' if not q.endswith('s') else q
+            
+            for p_word in p_words:
+                if q == p_word or q_singular == p_word or q_plural == p_word:
+                    return p
+    return None
+
+def get_products_by_category(category_query):
+    category_query = category_query.lower()
+    results = []
+    for p in products_catalog:
+        cat_lower = p['category'].lower()
+        if category_query in cat_lower or cat_lower in category_query:
+            results.append(p)
+    return results
+
+def get_products_under_budget(budget):
+    return [p for p in products_catalog if p['price'] <= budget]
+
+def generate_product_response(message):
+    msg_lower = message.lower()
+    words = set(re.findall(r'\b\w+\b', msg_lower))
+    
+    budget = None
+    budget_match = re.search(r'(under|below|less than|max)\s*(\d+)', msg_lower)
+    if budget_match:
+        budget = int(budget_match.group(2))
+        
+    is_price = bool(words & {'price', 'cost', 'how', 'much', 'rate'})
+    is_category = bool(words & {'decor', 'accessories', 'festive', 'art', 'craft', 'eco', 'category', 'collection'})
+    is_recommend = bool(words & {'suggest', 'recommend', 'best', 'gift', 'gifts', 'ideas'})
+    is_availability = bool(words & {'have', 'sell', 'available', 'show', 'buy', 'item', 'items'})
+
+    # Ensure we don't accidentally intercept shipping or other core fallback domains
+    if bool(words & {'ship', 'shipping', 'deliver', 'delivery', 'payment', 'return', 'order'}):
+        return None
+
+    matched_product = find_product_by_name(msg_lower)
+    
+    if not (is_price or is_category or is_recommend or is_availability or matched_product or budget):
+        return None # Not a product question
+
+    # 1. Price Questions
+    if is_price:
+        if matched_product:
+            return f"The price of {matched_product['name']} is ₹{matched_product['price']}. It's from our {matched_product['category']} collection! 🛍️"
+        elif bool(words & {'price', 'cost', 'much'}):
+            return "Sorry, I couldn't find that product in our current collection. Please browse our handcrafted catalog for available items 😊"
+
+    # 2. Recommendations
+    if is_recommend or budget:
+        prods = get_products_under_budget(budget) if budget else products_catalog
+        if prods:
+            import random
+            selected = random.sample(prods, min(len(prods), 4))
+            resp = f"Here are some beautiful gifts{' under ₹' + str(budget) if budget else ''}:\n"
+            for p in selected:
+                icon = "🎁"
+                if "Candles" in p['name']: icon = "🕯️"
+                elif "Diyas" in p['name']: icon = "🪔"
+                elif "Earrings" in p['name'] or "Jewelry" in p['name']: icon = "💍"
+                elif "Painting" in p['name'] or "Cards" in p['name']: icon = "🎨"
+                resp += f"{icon} {p['name']} — ₹{p['price']}\n"
+            return resp.strip()
+
+    # 3. Category Questions
+    if is_category and not matched_product:
+        cat_match = None
+        for cat in ['accessories', 'art', 'craft', 'eco', 'festive', 'decor', 'cleaning']:
+            if cat in msg_lower:
+                cat_match = cat
+                break
+        if cat_match:
+            prods = get_products_by_category(cat_match)
+            if prods:
+                resp = f"Yes! Here are some items from our {prods[0]['category']} collection:\n"
+                for p in prods[:4]:
+                    resp += f"• {p['name']} — ₹{p['price']}\n"
+                return resp.strip()
+
+    # 4. Availability
+    if is_availability or matched_product:
+        if matched_product:
+            return f"Yes! We have {matched_product['name']} for ₹{matched_product['price']} in our {matched_product['category']} collection 🕯️"
+        
+        cat_match = None
+        for cat in ['accessories', 'art', 'craft', 'eco', 'festive', 'decor', 'cleaning']:
+            if cat in msg_lower:
+                cat_match = cat
+                break
+        if cat_match:
+            prods = get_products_by_category(cat_match)
+            if prods:
+                resp = f"Yes! We have {prods[0]['category']} items like:\n"
+                for p in prods[:3]:
+                    resp += f"• {p['name']} — ₹{p['price']}\n"
+                return resp.strip()
+            
+        if bool(words & {'sell', 'have', 'buy'}):
+            return "Sorry, I couldn't find that product in our current collection. Please browse our handcrafted catalog for available items 😊"
+
+    return None
+
 # ────────────────────── CHATBOT ROUTES ──────────────────────
 
 def get_chatbot_fallback(message):
@@ -1006,6 +1139,14 @@ def chat():
     
     if not message:
         return jsonify({'reply': "Hi! I'm here to help you with our handcrafted products, shipping, and more. How can I help today?"})
+
+    # Priority logic: Product Catalog Queries
+    try:
+        product_response = generate_product_response(message)
+        if product_response:
+            return jsonify({'reply': product_response})
+    except Exception as e:
+        print(f"[Chatbot] Catalog search error: {e}")
 
     try:
         # Check if AI is available

@@ -43,7 +43,8 @@ async function apiCall(url, options = {}) {
     }
 
     if (res.status === 401) {
-        localStorage.clear();
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
         window.location.href = '/';
         return;
     }
@@ -87,7 +88,8 @@ function setupNavbar() {
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
         logoutBtn.addEventListener('click', () => {
-            localStorage.clear();
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
             window.location.href = '/';
         });
     }

@@ -32,14 +32,29 @@ document.addEventListener('DOMContentLoaded', () => {
     const chatInput = document.getElementById('chat-input');
     const chatMessages = document.getElementById('chat-messages');
 
-    // Load history from session storage if exists
-    const chatHistory = JSON.parse(sessionStorage.getItem('chatHistory')) || [];
-    if (chatHistory.length > 0) {
-        // Clear default greeting if we have history
-        chatMessages.innerHTML = '';
-        chatHistory.forEach(msg => {
-            appendMessage(msg.sender, msg.text, false);
-        });
+    let currentUserId = null;
+    try {
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+            const user = JSON.parse(userStr);
+            currentUserId = user.id || user._id;
+        }
+    } catch(e) {}
+
+    const storageKey = currentUserId ? `chat_history_${currentUserId}` : null;
+
+    if (storageKey) {
+        const chatHistory = JSON.parse(localStorage.getItem(storageKey)) || [];
+        if (chatHistory.length > 0) {
+            chatMessages.innerHTML = '';
+            chatHistory.forEach(msg => {
+                appendMessage(msg.sender, msg.text, false);
+            });
+        }
+    } else {
+        // Safe fallback: reset chat state completely if no identity
+        sessionStorage.removeItem('chatHistory');
+        chatMessages.innerHTML = '<div class="message bot-message">Hi there! How can I help you today?</div>';
     }
 
     chatbotToggle.addEventListener('click', () => {
@@ -120,14 +135,14 @@ document.addEventListener('DOMContentLoaded', () => {
         chatMessages.appendChild(msgDiv);
         scrollToBottom();
         
-        if (saveToHistory) {
-            const chatHistory = JSON.parse(sessionStorage.getItem('chatHistory')) || [];
+        if (saveToHistory && storageKey) {
+            const chatHistory = JSON.parse(localStorage.getItem(storageKey)) || [];
             // If empty, add default greeting first
             if (chatHistory.length === 0) {
                 chatHistory.push({ sender: 'bot', text: 'Hi there! How can I help you today?' });
             }
             chatHistory.push({ sender, text });
-            sessionStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+            localStorage.setItem(storageKey, JSON.stringify(chatHistory));
         }
     }
 
