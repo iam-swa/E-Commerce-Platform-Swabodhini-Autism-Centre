@@ -26,6 +26,7 @@ summary_cache = {}
 # Load environment variables from .env file
 env_path = os.path.join(os.path.dirname(__file__), '.env')
 load_dotenv(dotenv_path=env_path, override=True)
+print(f"[Dotenv] Loaded environment from: {env_path}")
 
 # Global Gemini Configuration
 GEMINI_MODEL = None
@@ -39,6 +40,8 @@ def init_gemini():
         print("[Gemini] API Key missing. Using fallbacks.")
         return
     try:
+        masked_key = api_key[:10] + "..." if api_key else "None"
+        print(f"[Gemini] Active key: {masked_key}")
         genai.configure(api_key=api_key)
         # List models and filter for generateContent support
         available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
@@ -944,104 +947,56 @@ def update_location():
 
 def get_chatbot_fallback(message):
     """Hybrid fallback system for common e-commerce queries with warm, conversational tone."""
-    msg = message.lower().strip()
+    words = re.findall(r'\b\w+\b', message.lower())
     
-    def contains_any(keywords):
-        for k in keywords:
-            if k in msg:
-                return True
-        return False
+    # 1a. Cash on Delivery (check before shipping)
+    if 'cod' in words or ('cash' in words and 'delivery' in words):
+        print("[Fallback Intent] cod")
+        return "Currently we do not offer cash on delivery. Payments are completed securely through UPI during checkout. 💳"
     
-    # Greetings (check first so "hi" doesn't fall through)
-    if contains_any(['hi', 'hello', 'hey', 'namaste', 'greetings', 'good morning', 'good evening', 'good afternoon']):
-        return "Hi there! 😊 Welcome to Swabodhini Autism Centre's shop! I can help you with our handcrafted products, shipping info, payments, and orders. What would you like to know?"
-    
-    # Help / what can you do
-    if contains_any(['help', 'what can you', 'what do you', 'how can you', 'assist', 'support']):
-        return "I can help you with:\n• 🛍️ Product info & recommendations\n• 🚚 Shipping & delivery details\n• 💳 Payment methods\n• 📦 Order status\n• ❓ General questions about Swabodhini\nJust ask away!"
-    
-    # Product info / what products / catalog
-    if contains_any(['product', 'item', 'catalog', 'what do you sell', 'what are', 'available', 'browse', 'collection', 'range']):
-        return "We offer a beautiful range of handcrafted products including greeting cards, paper bags, clay diyas, canvas paintings, beaded jewelry, cushion covers, organic phenyl, and handmade candles. Browse our shop to discover them all! 🎨"
-    
-    # Price / cost
-    if contains_any(['price', 'cost', 'how much', 'expensive', 'cheap', 'affordable', 'budget', 'rate']):
-        return "Our products are affordably priced, starting from ₹150! Greeting cards start at ₹150, paper bags at ₹200, clay diyas at ₹300, and canvas paintings at ₹1,200. Visit the shop page to see all prices!"
-    
-    # Shipping
-    if contains_any(['ship', 'shipping', 'deliver', 'delivery', 'tracking', 'arrive', 'courier', 'dispatch', 'how long', 'days']):
+    # 1. shipping
+    if any(w in words for w in ['ship', 'shipping', 'deliver', 'delivery', 'tracking', 'arrive', 'courier', 'dispatch']):
+        print("[Fallback Intent] shipping")
         return "Our products are handcrafted by students at Swabodhini. Shipping usually takes 5-7 business days within India. You'll receive updates as your order progresses! 🚚"
     
-    # Payments
-    if contains_any(['pay', 'payment', 'qr', 'upi', 'checkout', 'buy', 'purchase', 'transaction', 'gpay', 'phonepe', 'paytm']):
+    # 2. payment
+    if any(w in words for w in ['pay', 'payment', 'qr', 'upi', 'checkout', 'buy', 'purchase', 'transaction', 'gpay', 'phonepe', 'paytm']):
+        print("[Fallback Intent] payment")
         return "We accept payments via the QR code shown during checkout. Simply scan using any UPI app (GPay, PhonePe, Paytm, etc.) and upload your payment screenshot to complete your order. 💳"
     
-    # Returns / Refunds
-    if contains_any(['return', 'refund', 'exchange', 'cancel', 'money back', 'replace']):
+    # 3. returns
+    if any(w in words for w in ['return', 'returns', 'refund', 'exchange', 'cancel', 'replace']):
+        print("[Fallback Intent] returns")
         return "Since our products are handcrafted by students at Swabodhini Autism Centre, we unfortunately do not offer returns or exchanges. Each piece is made with love and care. We appreciate your understanding and support! ❤️"
     
-    # Orders / order status
-    if contains_any(['order', 'status', 'track', 'where is my', 'placed', 'confirm', 'pending', 'approved']):
+    # 4. orders
+    if any(w in words for w in ['order', 'orders', 'status', 'track', 'pending', 'approved']):
+        print("[Fallback Intent] orders")
         return "You can check your order status in the '📦 My Orders' section from the top menu. Orders go through these stages: Pending → Approved → Shipped → Delivered. If you have concerns, share your Transaction ID!"
     
-    # How to order / buy process
-    if contains_any(['how to order', 'how to buy', 'how do i', 'process', 'steps', 'place order']):
-        return "Ordering is simple! 1️⃣ Browse products and click 'Add to Cart'. 2️⃣ Go to your cart and click 'Proceed to Payment'. 3️⃣ Scan the QR code and pay. 4️⃣ Upload the payment screenshot and submit. That's it!"
+    # 5. handmade products
+    if any(w in words for w in ['handmade', 'handpainted', 'artisan', 'crafted', 'quality', 'product', 'products', 'catalog', 'items']):
+        print("[Fallback Intent] handmade products")
+        return "Every item in our store is lovingly handcrafted by the talented students at Swabodhini Autism Centre. Browse our shop to discover beautiful greeting cards, paper bags, clay diyas, paintings, and more! 🎨"
     
-    # About Swabodhini / Autism Centre
-    if contains_any(['about', 'swabodhini', 'autism', 'centre', 'center', 'who', 'organization', 'ngo', 'mission']):
-        return "Swabodhini Autism Centre is dedicated to empowering individuals with autism through vocational training. Every product in our store is lovingly handcrafted by our talented students. Your purchase directly supports their growth and independence! 🌟"
+    # 6. gift suggestions
+    if any(w in words for w in ['gift', 'gifts', 'suggest', 'recommend', 'birthday', 'festival', 'diwali', 'christmas', 'occasion', 'present']):
+        print("[Fallback Intent] gift suggestions")
+        return "Looking for a great gift? We highly recommend our handcrafted candles, colorful clay diyas, beautiful greeting cards, beaded jewelry sets, or our embroidered cushion covers. Each item is made with love by our students! 🎁"
     
-    # Handmade / quality
-    if contains_any(['handmade', 'handpainted', 'hand made', 'student', 'makes', 'quality', 'crafted', 'artisan']):
-        return "Every item in our store is lovingly handcrafted by the talented students at Swabodhini Autism Centre. Each piece is unique and made with great care, ensuring excellent quality. Your purchase directly supports their vocational training! ❤️"
+    # 7. greetings
+    if any(w in words for w in ['hi', 'hello', 'hey', 'namaste', 'greetings']):
+        print("[Fallback Intent] greetings")
+        return "Hi there! 😊 Welcome to Swabodhini Autism Centre's shop! I can help you with our handcrafted products, shipping info, payments, and orders. What would you like to know?"
     
-    # Gift Suggestions
-    if contains_any(['gift', 'suggest', 'recommend', 'birthday', 'festival', 'diwali', 'christmas', 'occasion', 'present']):
-        return "Great gift ideas from our collection: 🎨 Hand-painted greeting cards (₹150), 🪔 Clay diyas for festivals (₹300), 🕯️ Handmade candles (₹350), and 💍 Beaded jewelry sets (₹450). Each item comes with the love of our students!"
-    
-    # Specific products
-    if contains_any(['card', 'greeting']):
-        return "Our Hand-Painted Greeting Cards (₹150 for a set of 5) feature vibrant watercolor designs, perfect for birthdays, festivals, and special occasions! Each card is uniquely painted by our students. 🎨"
-    if contains_any(['bag', 'paper bag']):
-        return "Our Handmade Paper Bags (₹200 for a set of 10) are eco-friendly and decorated with hand-painted designs. Perfect for gifting and daily use! 🛍️"
-    if contains_any(['diya', 'diwali', 'lamp']):
-        return "Our Clay Diyas (₹300 for a set of 6) are beautifully sculpted and painted by our students. Perfect for Diwali celebrations and home decor! 🪔"
-    if contains_any(['painting', 'canvas', 'art']):
-        return "Our Canvas Paintings (₹1,200) depict beautiful nature scenes and are one-of-a-kind artworks by our talented student artists. Size: 12x16 inches. 🖼️"
-    if contains_any(['jewelry', 'jewellery', 'necklace', 'earring', 'bead']):
-        return "Our Beaded Jewelry Sets (₹450) include a necklace and matching earrings, carefully assembled by our skilled students. Each piece is unique! 💍"
-    if contains_any(['cushion', 'cover', 'pillow', 'embroid']):
-        return "Our Embroidered Cushion Covers (₹550 for a set of 2) feature beautiful floral patterns on premium cotton. Size: 16x16 inches, machine washable! 🧵"
-    if contains_any(['phenyl', 'cleaner', 'cleaning', 'floor']):
-        return "Our Organic Phenyl (₹180 for 1L) is an effective disinfectant with a pleasant pine fragrance. Safe for all floor types and made with eco-friendly ingredients! 🧹"
-    if contains_any(['candle', 'wax', 'fragrance', 'aroma']):
-        return "Our Handmade Candles (₹350 for a set of 4) come in lavender, rose, jasmine, and vanilla fragrances. Perfect for home decor and gifting! 🕯️"
-    
-    # Contact
-    if contains_any(['contact', 'email', 'phone', 'call', 'reach', 'number', 'address', 'location']):
-        return "You can reach us through this platform! For any queries about orders or products, feel free to ask me here. For urgent matters, please visit our centre directly. 📞"
-    
-    # Thanks / bye
-    if contains_any(['thank', 'thanks', 'bye', 'goodbye', 'great', 'awesome', 'nice', 'good', 'ok', 'okay']):
-        return "You're welcome! 😊 Happy to help! If you have any more questions, feel free to ask. Happy shopping at Swabodhini! 🛍️"
-    
-    # Cart related
-    if contains_any(['cart', 'add to cart', 'basket', 'remove']):
-        return "You can add products to your cart by clicking 'Add to Cart' on any product page. View your cart anytime by clicking '🛒 My Cart' in the top menu. You can adjust quantities or remove items there!"
-    
-    # Account / login
-    if contains_any(['account', 'login', 'signup', 'sign up', 'register', 'log in', 'password', 'otp']):
-        return "To create an account, just enter your name and phone number on the signup page. For login, enter your registered phone number. It's quick and easy! 📱"
-    
-    # Default Fallback — provide varied, helpful response
-    return ("I'd love to help! Here are some things I can assist you with:\n"
-            "• 🛍️ Product details & recommendations\n"
-            "• 🚚 Shipping & delivery info (5-7 business days)\n"
-            "• 💳 Payment process (QR code based)\n"
-            "• 📦 Order tracking\n"
-            "• ❤️ About Swabodhini Autism Centre\n"
-            "What would you like to know?")
+    # Unrelated queries (jokes, weather, etc.) or Default Fallback
+    if any(w in words for w in ['joke', 'weather', 'sing', 'dance', 'story']):
+        print("[Fallback Intent] unrelated")
+        return "I'm here to help with our handcrafted products, orders, shipping, and customer support 😊"
+        
+    # Default Fallback
+    print("[Fallback Intent] default")
+    return "I'm here to help with our handcrafted products, orders, shipping, and customer support 😊"
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
