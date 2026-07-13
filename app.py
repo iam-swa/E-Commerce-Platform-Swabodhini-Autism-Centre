@@ -90,6 +90,7 @@ def init_db():
             totalAmount REAL NOT NULL,
             paymentScreenshot TEXT NOT NULL,
             transactionId TEXT NOT NULL,
+            shippingAddress TEXT,
             status TEXT DEFAULT 'Pending Verification'
                 CHECK(status IN ('Pending Verification','Approved','Rejected','Shipped','Delivered')),
             createdAt TEXT DEFAULT (datetime('now')),
@@ -155,14 +156,14 @@ def init_db():
     row = cur.execute("SELECT COUNT(*) as cnt FROM products").fetchone()
     if row['cnt'] == 0:
         products = [
-            ('Hand-Painted Greeting Cards', 150, 'Beautiful hand-painted greeting cards made by the talented students of Swabodhini Autism Centre. Each card is unique and made with love, featuring vibrant watercolor designs. Perfect for birthdays, festivals, and special occasions. Set of 5 cards included.', '/images/product1.jpg', 'Art & Craft', 50),
-            ('Handmade Paper Bags', 200, 'Eco-friendly handmade paper bags crafted by our students. These sturdy and stylish bags are perfect for gifting and daily use. Each bag is decorated with hand-painted designs and comes in assorted colors. Set of 10 bags.', '/images/product2.jpg', 'Eco-Friendly', 30),
-            ('Clay Diyas (Set of 6)', 300, 'Beautifully sculpted and painted clay diyas, handcrafted by our students. Perfect for Diwali celebrations, home decor, and religious ceremonies. Each diya is uniquely decorated with vibrant patterns and colors.', '/images/product3.jpg', 'Festive', 25),
-            ('Canvas Painting - Nature', 1200, 'Original canvas painting depicting beautiful nature scenes, created by the artists at Swabodhini. Each painting is a one-of-a-kind artwork that captures the creativity and imagination of our talented students. Size: 12x16 inches.', '/images/product4.jpg', 'Art & Craft', 10),
-            ('Beaded Jewelry Set', 450, 'Handcrafted beaded jewelry set including a necklace and matching earrings. Made with colorful beads and carefully assembled by our skilled students. Each piece is unique with its own character and charm.', '/images/product5.jpg', 'Accessories', 20),
-            ('Embroidered Cushion Covers', 550, 'Set of 2 hand-embroidered cushion covers with beautiful floral patterns. Made with premium cotton fabric and intricate embroidery work by our students. Size: 16x16 inches. Machine washable.', '/images/product6.jpg', 'Home Decor', 15),
-            ('Organic Phenyl (1L)', 180, 'High-quality organic phenyl floor cleaner made at Swabodhini. Effective disinfectant with a pleasant pine fragrance. Safe for all types of flooring. Made with eco-friendly ingredients. 1 Litre bottle.', '/images/product7.jpg', 'Cleaning', 100),
-            ('Handmade Candles (Set of 4)', 350, 'Aromatic handmade candles crafted by our students. Available in lavender, rose, jasmine, and vanilla fragrances. Perfect for home decor, gifting, and creating a peaceful ambiance. Burn time: approximately 8 hours each.', '/images/product8.jpg', 'Home Decor', 35),
+            ('Hand-Painted Greeting Cards', 150, 'Beautiful hand-painted greeting cards made by the talented students of Swabodhini Autism Centre. Each card is unique and made with love, featuring vibrant watercolor designs. Perfect for birthdays, festivals, and special occasions. Set of 5 cards included.', '/uploads/products/cards.png', 'Art & Craft', 50),
+            ('Handmade Paper Bags', 200, 'Eco-friendly handmade paper bags crafted by our students. These sturdy and stylish bags are perfect for gifting and daily use. Each bag is decorated with hand-painted designs and comes in assorted colors. Set of 10 bags.', '/uploads/products/paperbags.png', 'Eco-Friendly', 30),
+            ('Clay Diyas (Set of 6)', 300, 'Beautifully sculpted and painted clay diyas, handcrafted by our students. Perfect for Diwali celebrations, home decor, and religious ceremonies. Each diya is uniquely decorated with vibrant patterns and colors.', '/uploads/products/diyas.png', 'Festive', 25),
+            ('Canvas Painting - Nature', 1200, 'Original canvas painting depicting beautiful nature scenes, created by the artists at Swabodhini. Each painting is a one-of-a-kind artwork that captures the creativity and imagination of our talented students. Size: 12x16 inches.', '/uploads/products/painting.png', 'Art & Craft', 10),
+            ('Beaded Jewelry Set', 450, 'Handcrafted beaded jewelry set including a necklace and matching earrings. Made with colorful beads and carefully assembled by our skilled students. Each piece is unique with its own character and charm.', '/uploads/products/jewelry.png', 'Accessories', 20),
+            ('Embroidered Cushion Covers', 550, 'Set of 2 hand-embroidered cushion covers with beautiful floral patterns. Made with premium cotton fabric and intricate embroidery work by our students. Size: 16x16 inches. Machine washable.', '/uploads/products/cushions.png', 'Home Decor', 15),
+            ('Organic Phenyl (1L)', 180, 'High-quality organic phenyl floor cleaner made at Swabodhini. Effective disinfectant with a pleasant pine fragrance. Safe for all types of flooring. Made with eco-friendly ingredients. 1 Litre bottle.', 'https://images.unsplash.com/photo-1584813470613-5b1c1cad3d69?auto=format&fit=crop&q=80&w=400', 'Cleaning', 100),
+            ('Handmade Candles (Set of 4)', 350, 'Aromatic handmade candles crafted by our students. Available in lavender, rose, jasmine, and vanilla fragrances. Perfect for home decor, gifting, and creating a peaceful ambiance. Burn time: approximately 8 hours each.', 'https://images.unsplash.com/photo-1603006905003-be475563bc59?auto=format&fit=crop&q=80&w=400', 'Home Decor', 35),
         ]
         for p in products:
             pid = generate_id()
@@ -467,6 +468,9 @@ def delete_product(product_id):
     product = db.execute("SELECT * FROM products WHERE _id = ?", (product_id,)).fetchone()
     if not product:
         return jsonify({'message': 'Product not found.'}), 404
+    db.execute("DELETE FROM cart_items WHERE product_id = ?", (product_id,))
+    db.execute("DELETE FROM product_views WHERE product_id = ?", (product_id,))
+    db.execute("UPDATE order_products SET product_id = NULL WHERE product_id = ?", (product_id,))
     db.execute("DELETE FROM products WHERE _id = ?", (product_id,))
     db.commit()
     return jsonify({'message': 'Product deleted successfully!'})
@@ -610,6 +614,7 @@ def create_order():
     transaction_id = request.form.get('transactionId')
     products_json = request.form.get('products')
     total_amount = request.form.get('totalAmount')
+    shipping_address_json = request.form.get('shippingAddress')
 
     if 'paymentScreenshot' not in request.files:
         return jsonify({'message': 'Payment screenshot is required.'}), 400
@@ -617,34 +622,68 @@ def create_order():
     if not transaction_id:
         return jsonify({'message': 'Transaction ID is required.'}), 400
 
+    if not shipping_address_json:
+        return jsonify({'message': 'Shipping address is required.'}), 400
+
     file = request.files['paymentScreenshot']
     if not file or not file.filename:
         return jsonify({'message': 'Payment screenshot is required.'}), 400
+
+    parsed_products = json.loads(products_json)
+    db = get_db()
+
+    # ── Validate stock availability BEFORE creating order ──
+    for p in parsed_products:
+        product_id = p.get('product')
+        qty = int(p.get('quantity', 1))
+        if product_id:
+            prod_row = db.execute(
+                "SELECT name, stock FROM products WHERE _id = ?", (product_id,)
+            ).fetchone()
+            if not prod_row:
+                return jsonify({'message': f'Product not found: {p.get("name", product_id)}'}), 400
+            if prod_row['stock'] < qty:
+                return jsonify({
+                    'message': f'Insufficient stock for "{prod_row["name"]}". Available: {prod_row["stock"]}, Requested: {qty}'
+                }), 400
 
     filename = f"payment-{request.user['_id']}-{int(datetime.datetime.utcnow().timestamp() * 1000)}{os.path.splitext(secure_filename(file.filename))[1]}"
     file.save(os.path.join(UPLOAD_PAYMENTS, filename))
     screenshot_path = f'/uploads/payments/{filename}'
 
-    parsed_products = json.loads(products_json)
     order_id = generate_id()
 
-    db = get_db()
     db.execute(
-        "INSERT INTO orders (_id, user_id, totalAmount, paymentScreenshot, transactionId) VALUES (?,?,?,?,?)",
-        (order_id, request.user['_id'], float(total_amount), screenshot_path, transaction_id)
+        "INSERT INTO orders (_id, user_id, totalAmount, paymentScreenshot, transactionId, shippingAddress, status) VALUES (?,?,?,?,?,?,?)",
+        (order_id, request.user['_id'], float(total_amount), screenshot_path, transaction_id, shipping_address_json, 'Pending Verification')
     )
 
     for p in parsed_products:
         db.execute(
             "INSERT INTO order_products (order_id, product_id, name, price, quantity, image) VALUES (?,?,?,?,?,?)",
-            (order_id, p.get('product'), p.get('name'), p.get('price'), p.get('quantity', 1), p.get('image'))
+            (order_id, p.get('product'), p.get('name'), float(p.get('price', 0)), int(p.get('quantity', 1)), p.get('image'))
         )
+
+    # Deduct stock immediately when order is placed
+    for p in parsed_products:
+        product_id = p.get('product')
+        qty = int(p.get('quantity', 1))
+        if product_id:
+            db.execute(
+                "UPDATE products SET stock = MAX(0, stock - ?) WHERE _id = ?",
+                (qty, product_id)
+            )
+            print(f'[Stock] Deducted {qty} from product {product_id}')
 
     # Clear user's cart
     db.execute("DELETE FROM cart_items WHERE user_id = ?", (request.user['_id'],))
     db.commit()
 
     order = row_to_dict(db.execute("SELECT * FROM orders WHERE _id = ?", (order_id,)).fetchone())
+    order['shippingAddress'] = json.loads(order['shippingAddress']) if order.get('shippingAddress') else None
+    # Attach products to the response
+    prods = db.execute("SELECT * FROM order_products WHERE order_id = ?", (order_id,)).fetchall()
+    order['products'] = rows_to_list(prods)
     return jsonify({'message': 'Order placed successfully!', 'order': order}), 201
 
 
@@ -658,6 +697,7 @@ def get_my_orders():
     result = []
     for order in orders:
         o = row_to_dict(order)
+        o['shippingAddress'] = json.loads(o['shippingAddress']) if o.get('shippingAddress') else None
         prods = db.execute("SELECT * FROM order_products WHERE order_id = ?", (o['_id'],)).fetchall()
         o['products'] = rows_to_list(prods)
         result.append(o)
@@ -674,6 +714,7 @@ def get_all_orders():
     result = []
     for order in orders:
         o = row_to_dict(order)
+        o['shippingAddress'] = json.loads(o['shippingAddress']) if o.get('shippingAddress') else None
         # Attach user info
         user = db.execute("SELECT name, email, phone FROM users WHERE _id = ?", (o['user_id'],)).fetchone()
         o['user'] = row_to_dict(user) if user else None
@@ -693,31 +734,161 @@ def update_order_status(order_id):
     valid = ['Pending Verification', 'Approved', 'Rejected', 'Shipped', 'Delivered']
 
     if status not in valid:
-        return jsonify({'message': 'Invalid status.'}), 400
+        return jsonify({'message': f'Invalid status: {status}. Must be one of: {valid}'}), 400
 
     db = get_db()
     current = db.execute("SELECT * FROM orders WHERE _id = ?", (order_id,)).fetchone()
     if not current:
         return jsonify({'message': 'Order not found.'}), 404
 
-    # If approving, deduct stock
-    if status == 'Approved' and current['status'] != 'Approved':
+    current_status = current['status']
+
+    # Enforce valid status transitions
+    allowed_transitions = {
+        'Pending Verification': ['Approved', 'Rejected'],
+        'Approved': ['Shipped', 'Rejected'],
+        'Shipped': ['Delivered'],
+        'Delivered': [],
+        'Rejected': []
+    }
+
+    if status not in allowed_transitions.get(current_status, []):
+        return jsonify({
+            'message': f'Cannot change status from "{current_status}" to "{status}". Allowed transitions: {allowed_transitions.get(current_status, [])}'
+        }), 400
+
+    # If rejecting an order, restore the stock that was deducted at order creation
+    if status == 'Rejected' and current_status != 'Rejected':
         prods = db.execute("SELECT * FROM order_products WHERE order_id = ?", (order_id,)).fetchall()
         for item in prods:
             if item['product_id']:
+                restore_qty = int(item['quantity'] or 1)
                 db.execute(
-                    "UPDATE products SET stock = MAX(0, stock - ?) WHERE _id = ?",
-                    (item['quantity'] or 1, item['product_id'])
+                    "UPDATE products SET stock = stock + ? WHERE _id = ?",
+                    (restore_qty, item['product_id'])
                 )
+                print(f'[Stock] Restored {restore_qty} to product {item["product_id"]} (order {order_id} rejected)')
 
     db.execute("UPDATE orders SET status = ? WHERE _id = ?", (status, order_id))
     db.commit()
 
+    print(f'[Order] {order_id} status changed: {current_status} → {status}')
+
+    # Return complete order data with user AND products for frontend
     order = row_to_dict(db.execute("SELECT * FROM orders WHERE _id = ?", (order_id,)).fetchone())
+    order['shippingAddress'] = json.loads(order['shippingAddress']) if order.get('shippingAddress') else None
     user = db.execute("SELECT name, email, phone FROM users WHERE _id = ?", (order['user_id'],)).fetchone()
     order['user'] = row_to_dict(user) if user else None
+    prods = db.execute("SELECT * FROM order_products WHERE order_id = ?", (order_id,)).fetchall()
+    order['products'] = rows_to_list(prods)
 
-    return jsonify({'message': 'Order status updated!', 'order': order})
+    return jsonify({'message': f'Order status updated to "{status}"!', 'order': order})
+
+
+@app.route('/api/orders/<order_id>/approve', methods=['PUT'])
+@admin_required
+def approve_order(order_id):
+    """Convenience endpoint to approve an order."""
+    db = get_db()
+    current = db.execute("SELECT * FROM orders WHERE _id = ?", (order_id,)).fetchone()
+    if not current:
+        return jsonify({'message': 'Order not found.'}), 404
+    if current['status'] != 'Pending Verification':
+        return jsonify({'message': f'Cannot approve order with status "{current["status"]}". Only pending orders can be approved.'}), 400
+
+    db.execute("UPDATE orders SET status = 'Approved' WHERE _id = ?", (order_id,))
+    db.commit()
+    print(f'[Order] {order_id} approved')
+
+    order = row_to_dict(db.execute("SELECT * FROM orders WHERE _id = ?", (order_id,)).fetchone())
+    order['shippingAddress'] = json.loads(order['shippingAddress']) if order.get('shippingAddress') else None
+    user = db.execute("SELECT name, email, phone FROM users WHERE _id = ?", (order['user_id'],)).fetchone()
+    order['user'] = row_to_dict(user) if user else None
+    prods = db.execute("SELECT * FROM order_products WHERE order_id = ?", (order_id,)).fetchall()
+    order['products'] = rows_to_list(prods)
+    return jsonify({'message': 'Order approved successfully!', 'order': order})
+
+
+@app.route('/api/orders/<order_id>/reject', methods=['PUT'])
+@admin_required
+def reject_order(order_id):
+    """Convenience endpoint to reject an order and restore stock."""
+    db = get_db()
+    current = db.execute("SELECT * FROM orders WHERE _id = ?", (order_id,)).fetchone()
+    if not current:
+        return jsonify({'message': 'Order not found.'}), 404
+    if current['status'] in ('Rejected', 'Delivered'):
+        return jsonify({'message': f'Cannot reject order with status "{current["status"]}".'}), 400
+
+    # Restore stock
+    prods = db.execute("SELECT * FROM order_products WHERE order_id = ?", (order_id,)).fetchall()
+    for item in prods:
+        if item['product_id']:
+            restore_qty = int(item['quantity'] or 1)
+            db.execute(
+                "UPDATE products SET stock = stock + ? WHERE _id = ?",
+                (restore_qty, item['product_id'])
+            )
+            print(f'[Stock] Restored {restore_qty} to product {item["product_id"]} (order {order_id} rejected)')
+
+    db.execute("UPDATE orders SET status = 'Rejected' WHERE _id = ?", (order_id,))
+    db.commit()
+    print(f'[Order] {order_id} rejected, stock restored')
+
+    order = row_to_dict(db.execute("SELECT * FROM orders WHERE _id = ?", (order_id,)).fetchone())
+    order['shippingAddress'] = json.loads(order['shippingAddress']) if order.get('shippingAddress') else None
+    user = db.execute("SELECT name, email, phone FROM users WHERE _id = ?", (order['user_id'],)).fetchone()
+    order['user'] = row_to_dict(user) if user else None
+    order['products'] = rows_to_list(prods)
+    return jsonify({'message': 'Order rejected. Stock restored.', 'order': order})
+
+
+@app.route('/api/orders/<order_id>/ship', methods=['PUT'])
+@admin_required
+def ship_order(order_id):
+    """Convenience endpoint to mark an order as shipped."""
+    db = get_db()
+    current = db.execute("SELECT * FROM orders WHERE _id = ?", (order_id,)).fetchone()
+    if not current:
+        return jsonify({'message': 'Order not found.'}), 404
+    if current['status'] != 'Approved':
+        return jsonify({'message': f'Cannot ship order with status "{current["status"]}". Only approved orders can be shipped.'}), 400
+
+    db.execute("UPDATE orders SET status = 'Shipped' WHERE _id = ?", (order_id,))
+    db.commit()
+    print(f'[Order] {order_id} shipped')
+
+    order = row_to_dict(db.execute("SELECT * FROM orders WHERE _id = ?", (order_id,)).fetchone())
+    order['shippingAddress'] = json.loads(order['shippingAddress']) if order.get('shippingAddress') else None
+    user = db.execute("SELECT name, email, phone FROM users WHERE _id = ?", (order['user_id'],)).fetchone()
+    order['user'] = row_to_dict(user) if user else None
+    prods = db.execute("SELECT * FROM order_products WHERE order_id = ?", (order_id,)).fetchall()
+    order['products'] = rows_to_list(prods)
+    return jsonify({'message': 'Order marked as shipped!', 'order': order})
+
+
+@app.route('/api/orders/<order_id>/deliver', methods=['PUT'])
+@admin_required
+def deliver_order(order_id):
+    """Convenience endpoint to mark an order as delivered."""
+    db = get_db()
+    current = db.execute("SELECT * FROM orders WHERE _id = ?", (order_id,)).fetchone()
+    if not current:
+        return jsonify({'message': 'Order not found.'}), 404
+    if current['status'] != 'Shipped':
+        return jsonify({'message': f'Cannot deliver order with status "{current["status"]}". Only shipped orders can be delivered.'}), 400
+
+    db.execute("UPDATE orders SET status = 'Delivered' WHERE _id = ?", (order_id,))
+    db.commit()
+    print(f'[Order] {order_id} delivered')
+
+    order = row_to_dict(db.execute("SELECT * FROM orders WHERE _id = ?", (order_id,)).fetchone())
+    order['shippingAddress'] = json.loads(order['shippingAddress']) if order.get('shippingAddress') else None
+    user = db.execute("SELECT name, email, phone FROM users WHERE _id = ?", (order['user_id'],)).fetchone()
+    order['user'] = row_to_dict(user) if user else None
+    prods = db.execute("SELECT * FROM order_products WHERE order_id = ?", (order_id,)).fetchall()
+    order['products'] = rows_to_list(prods)
+    return jsonify({'message': 'Order delivered successfully!', 'order': order})
 
 
 # ────────────────────── ADMIN ROUTES ──────────────────────

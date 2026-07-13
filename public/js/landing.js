@@ -16,14 +16,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         products.forEach((product, index) => {
             const card = document.createElement('div');
             card.className = 'product-card';
+            if (product.stock === 0) card.classList.add('out-of-stock-card');
             card.style.animationDelay = `${index * 0.08}s`;
             card.innerHTML = `
-        <img class="product-card-img" src="${getProductImage(product.image)}" alt="${product.name}" 
-             onerror="this.src='https://picsum.photos/seed/${product._id}/400/300'">
+        <div class="product-card-img-wrap">
+          <img class="product-card-img" src="${getProductImage(product.image, product._id)}" alt="${product.name}" 
+               onerror="this.src='https://picsum.photos/seed/${product._id}/400/300'">
+          ${product.stock === 0 ? '<div class="out-of-stock-overlay">Out of Stock</div>' : ''}
+        </div>
         <div class="product-card-body">
           <div class="category">${product.category || 'General'}</div>
           <h3>${product.name}</h3>
           <div class="price">${formatPrice(product.price)}</div>
+          ${product.stock > 0
+                ? `<div class="stock-indicator in-stock">✅ In Stock (${product.stock})</div>`
+                : `<div class="stock-indicator no-stock">❌ Out of Stock</div>`
+            }
         </div>
       `;
             card.addEventListener('click', () => {

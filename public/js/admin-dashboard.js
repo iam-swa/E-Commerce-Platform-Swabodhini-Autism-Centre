@@ -8,10 +8,10 @@ function formatPrice(price) {
     return `₹${Number(price).toLocaleString('en-IN')}`;
 }
 
-function getProductImage(img) {
+function getProductImage(img, fallbackId = 'default') {
     return img && img !== '/images/placeholder.png'
         ? img
-        : `https://picsum.photos/seed/${Math.random().toString(36).substr(2, 6)}/400/300`;
+        : `https://picsum.photos/seed/${fallbackId}/400/300`;
 }
 
 async function apiCall(url, options = {}) {
@@ -21,7 +21,10 @@ async function apiCall(url, options = {}) {
     if (!(options.body instanceof FormData)) {
         headers['Content-Type'] = 'application/json';
     }
-    const res = await fetch(url, { ...options, headers });
+    const fetchOptions = { ...options, headers };
+    // Force no caching for all API calls
+    fetchOptions.cache = 'no-store';
+    const res = await fetch(url, fetchOptions);
     const data = await res.json();
     if (res.status === 401 || res.status === 403) {
         localStorage.clear();
@@ -249,7 +252,7 @@ async function loadProducts() {
             const rowClass = p.stock < 5 ? 'row-low-stock' : '';
             return `
                 <tr class="${rowClass}">
-                    <td><img src="${getProductImage(p.image)}" alt="${p.name}" onerror="this.src='https://picsum.photos/seed/${p._id}/100/100'"></td>
+                    <td><img src="${getProductImage(p.image, p._id)}" alt="${p.name}" onerror="this.src='https://picsum.photos/seed/${p._id}/100/100'"></td>
                     <td><strong>${p.name}</strong></td>
                     <td>${formatPrice(p.price)}</td>
                     <td><span class="badge badge-neutral">${p.category || 'General'}</span></td>
@@ -385,17 +388,13 @@ async function loadOrders() {
 
         body.innerHTML = orders.map(order => {
             const statusClass = getStatusClass(order.status);
+            const addr = order.shippingAddress;
+            const addrText = addr
+                ? `<strong>${addr.fullName}</strong><br><small>${addr.phone}</small><br><small style="color:var(--text-muted);">${addr.addressLine1}${addr.addressLine2 ? ', ' + addr.addressLine2 : ''}, ${addr.city}, ${addr.state} – ${addr.pincode}</small>`
+                : '<small style="color:var(--text-muted);">N/A</small>';
             return `
                 <tr>
                     <td><span style="font-family:monospace;font-size:0.8rem;color:var(--text-muted);">#${order._id.slice(-8).toUpperCase()}</span></td>
-                    <td>
-                        <strong>${order.user?.name || 'N/A'}</strong><br>
-                        <small style="color:var(--text-muted);">📱 ${order.user?.phone || ''}</small>
-                    </td>
-                    <td>${order.products.map(p => `<div style="margin-bottom:2px;">${p.name} <span style="color:var(--text-muted);">×${p.quantity}</span></div>`).join('')}</td>
-                    <td><strong style="color:var(--accent);">${formatPrice(order.totalAmount)}</strong></td>
-                    <td><span style="font-family:monospace;font-size:0.82rem;">${order.transactionId}</span></td>
-                    <td><button class="screenshot-btn" onclick="viewScreenshot('${order.paymentScreenshot}')">📸 View</button></td>
                     <td><span class="badge ${statusClass}">${order.status}</span></td>
                     <td>
                         <div class="action-btns" style="flex-direction:column;gap:4px;">
@@ -414,6 +413,15 @@ async function loadOrders() {
                             ` : ''}
                         </div>
                     </td>
+                    <td>
+                        <strong>${order.user?.name || 'N/A'}</strong><br>
+                        <small style="color:var(--text-muted);">📱 ${order.user?.phone || ''}</small>
+                    </td>
+                    <td>${order.products.map(p => `<div style="margin-bottom:2px;">${p.name} <span style="color:var(--text-muted);">×${p.quantity}</span></div>`).join('')}</td>
+                    <td><strong style="color:var(--accent);">${formatPrice(order.totalAmount)}</strong></td>
+                    <td>${addrText}</td>
+                    <td><span style="font-family:monospace;font-size:0.82rem;">${order.transactionId}</span></td>
+                    <td><button class="screenshot-btn" onclick="viewScreenshot('${order.paymentScreenshot}')">📸 View</button></td>
                 </tr>
             `;
         }).join('');
@@ -429,8 +437,10 @@ window.viewScreenshot = function (src) {
 };
 
 window.updateOrderStatus = async function (orderId, status) {
-    const confirmMsg = status === 'Approved'
-        ? 'Approve this order? Stock will be automatically deducted.'
+    const confirmMsg = status === 'Rejected'
+        ? 'Reject this order? Stock will be automatically restored.'
+        : status === 'Approved'
+        ? 'Approve this order?'
         : `Change order status to "${status}"?`;
 
     if (!confirm(confirmMsg)) return;
@@ -442,8 +452,9 @@ window.updateOrderStatus = async function (orderId, status) {
         });
         showToast(`Order status updated to "${status}"`);
         loadOrders();
-        // Refresh dashboard stats and stock
+        // Refresh dashboard stats and stock panel
         loadDashboard();
+        loadStock();
     } catch (error) {
         showToast(error.message, 'error');
     }

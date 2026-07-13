@@ -36,7 +36,7 @@ const upload = multer({
 // POST /api/orders - Create new order
 router.post('/', auth, upload.single('paymentScreenshot'), async (req, res) => {
     try {
-        const { transactionId, products, totalAmount } = req.body;
+        const { transactionId, products, totalAmount, shippingAddress } = req.body;
 
         if (!req.file) {
             return res.status(400).json({ message: 'Payment screenshot is required.' });
@@ -46,11 +46,41 @@ router.post('/', auth, upload.single('paymentScreenshot'), async (req, res) => {
             return res.status(400).json({ message: 'Transaction ID is required.' });
         }
 
+        if (!shippingAddress) {
+            return res.status(400).json({ message: 'Shipping address is required.' });
+        }
+
+        let parsedAddress;
+        try {
+            parsedAddress = JSON.parse(shippingAddress);
+        } catch {
+            return res.status(400).json({ message: 'Invalid shipping address format.' });
+        }
+
+        const requiredFields = ['fullName', 'phone', 'addressLine1', 'city', 'state', 'pincode'];
+        for (const field of requiredFields) {
+            if (!parsedAddress[field] || !parsedAddress[field].trim()) {
+                return res.status(400).json({ message: `Address field "${field}" is required.` });
+            }
+        }
+
         const parsedProducts = JSON.parse(products);
+
+        // Deduct stock immediately when order is placed
+        for (const item of parsedProducts) {
+            if (item.product) {
+                const product = await Product.findById(item.product);
+                if (product) {
+                    product.stock = Math.max(0, product.stock - (item.quantity || 1));
+                    await product.save();
+                }
+            }
+        }
 
         const order = new Order({
             user: req.user._id,
             products: parsedProducts,
+            shippingAddress: parsedAddress,
             totalAmount: parseFloat(totalAmount),
             paymentScreenshot: `/uploads/payments/${req.file.filename}`,
             transactionId
@@ -111,13 +141,13 @@ router.put('/:id/status', adminAuth, async (req, res) => {
             return res.status(404).json({ message: 'Order not found.' });
         }
 
-        // If changing to Approved and it wasn't already approved, deduct stock
-        if (status === 'Approved' && currentOrder.status !== 'Approved') {
+        // If rejecting an order, restore the stock that was deducted at order creation
+        if (status === 'Rejected' && currentOrder.status !== 'Rejected') {
             for (const item of currentOrder.products) {
                 if (item.product) {
                     const product = await Product.findById(item.product);
                     if (product) {
-                        product.stock = Math.max(0, product.stock - (item.quantity || 1));
+                        product.stock = product.stock + (item.quantity || 1);
                         await product.save();
                     }
                 }

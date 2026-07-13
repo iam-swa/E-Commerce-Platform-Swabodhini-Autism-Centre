@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         detail.style.display = 'grid';
 
         document.title = `${product.name} | Swabodhini`;
-        document.getElementById('productImage').src = getProductImage(product.image);
+        document.getElementById('productImage').src = getProductImage(product.image, product._id);
         document.getElementById('productImage').onerror = function () {
             this.src = `https://picsum.photos/seed/${product._id}/600/450`;
         };
@@ -29,32 +29,47 @@ document.addEventListener('DOMContentLoaded', async () => {
                 : '❌ Out of Stock';
         document.getElementById('productDescription').textContent = product.description;
 
-        // Add to cart
-        document.getElementById('addToCartBtn').addEventListener('click', async () => {
-            try {
-                await apiCall('/api/cart', {
-                    method: 'POST',
-                    body: JSON.stringify({ productId: product._id, quantity: 1 })
-                });
-                showToast('Added to cart!');
-                updateCartBadge();
-            } catch (error) {
-                showToast(error.message, 'error');
-            }
-        });
+        // Disable buttons if out of stock
+        const addToCartBtn = document.getElementById('addToCartBtn');
+        const buyNowBtn = document.getElementById('buyNowBtn');
 
-        // Buy now
-        document.getElementById('buyNowBtn').addEventListener('click', async () => {
-            try {
-                await apiCall('/api/cart', {
-                    method: 'POST',
-                    body: JSON.stringify({ productId: product._id, quantity: 1 })
-                });
-                window.location.href = '/cart';
-            } catch (error) {
-                showToast(error.message, 'error');
-            }
-        });
+        if (product.stock === 0) {
+            addToCartBtn.disabled = true;
+            addToCartBtn.textContent = '❌ Out of Stock';
+            addToCartBtn.style.opacity = '0.5';
+            addToCartBtn.style.cursor = 'not-allowed';
+            buyNowBtn.disabled = true;
+            buyNowBtn.textContent = '❌ Out of Stock';
+            buyNowBtn.style.opacity = '0.5';
+            buyNowBtn.style.cursor = 'not-allowed';
+        } else {
+            // Add to cart
+            addToCartBtn.addEventListener('click', async () => {
+                try {
+                    await apiCall('/api/cart', {
+                        method: 'POST',
+                        body: JSON.stringify({ productId: product._id, quantity: 1 })
+                    });
+                    showToast('Added to cart!');
+                    updateCartBadge();
+                } catch (error) {
+                    showToast(error.message, 'error');
+                }
+            });
+
+            // Buy now
+            buyNowBtn.addEventListener('click', async () => {
+                try {
+                    await apiCall('/api/cart', {
+                        method: 'POST',
+                        body: JSON.stringify({ productId: product._id, quantity: 1 })
+                    });
+                    window.location.href = '/cart';
+                } catch (error) {
+                    showToast(error.message, 'error');
+                }
+            });
+        }
 
         // ── Track this view (fire-and-forget, don't block UI) ────────────────
         trackProductView(productId);
@@ -132,7 +147,7 @@ async function loadRecommendations(productId) {
             <a href="/product?id=${p._id}" class="rec-card">
                 <img
                     class="rec-card-img"
-                    src="${getProductImage(p.image)}"
+                    src="${getProductImage(p.image, p._id)}"
                     alt="${escapeHtml(p.name)}"
                     onerror="this.src='https://picsum.photos/seed/${p._id}/400/300'"
                     loading="lazy"

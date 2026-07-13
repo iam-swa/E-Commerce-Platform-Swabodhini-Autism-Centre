@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             total += itemTotal;
             return `
         <div class="cart-item">
-          <img class="cart-item-img" src="${getProductImage(product.image)}" alt="${product.name}"
+          <img class="cart-item-img" src="${getProductImage(product.image, product._id)}" alt="${product.name}"
                onerror="this.src='https://picsum.photos/seed/${product._id}/200/200'">
           <div class="cart-item-info">
             <h3>${product.name}</h3>

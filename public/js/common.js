@@ -25,7 +25,9 @@ async function apiCall(url, options = {}) {
     if (!(options.body instanceof FormData)) {
         headers['Content-Type'] = 'application/json';
     }
-    const res = await fetch(url, { ...options, headers });
+    const fetchOptions = { ...options, headers };
+    fetchOptions.cache = 'no-store';
+    const res = await fetch(url, fetchOptions);
     const data = await res.json();
     if (res.status === 401) {
         localStorage.clear();
@@ -93,10 +95,10 @@ function formatPrice(price) {
 }
 
 // Product image fallback
-function getProductImage(img) {
+function getProductImage(img, fallbackId = 'default') {
     return img && img !== '/images/placeholder.png'
         ? img
-        : `https://picsum.photos/seed/${Math.random().toString(36).substr(2, 6)}/400/300`;
+        : `https://picsum.photos/seed/${fallbackId}/400/300`;
 }
 
 // ── Location: request once per session, send to backend ────────────────────

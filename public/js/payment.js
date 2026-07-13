@@ -37,10 +37,30 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.disabled = true;
 
         try {
+            // Collect shipping address
+            const shippingAddress = {
+                fullName: document.getElementById('addrFullName').value.trim(),
+                phone: document.getElementById('addrPhone').value.trim(),
+                addressLine1: document.getElementById('addrLine1').value.trim(),
+                addressLine2: document.getElementById('addrLine2').value.trim(),
+                city: document.getElementById('addrCity').value.trim(),
+                state: document.getElementById('addrState').value.trim(),
+                pincode: document.getElementById('addrPincode').value.trim()
+            };
+
+            // Validate pincode
+            if (!/^[0-9]{6}$/.test(shippingAddress.pincode)) {
+                showToast('Please enter a valid 6-digit pincode.', 'error');
+                btn.textContent = '✅ Confirm Order';
+                btn.disabled = false;
+                return;
+            }
+
             const formData = new FormData();
             formData.append('paymentScreenshot', fileInput.files[0]);
             formData.append('transactionId', document.getElementById('transactionId').value);
             formData.append('totalAmount', total);
+            formData.append('shippingAddress', JSON.stringify(shippingAddress));
 
             const products = cart.map(item => ({
                 product: item.product._id,
