@@ -12,31 +12,42 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        // Stagger animation
+        // Staggered entrance animation
         products.forEach((product, index) => {
             const card = document.createElement('div');
             card.className = 'product-card';
             if (product.stock === 0) card.classList.add('out-of-stock-card');
-            card.style.animationDelay = `${index * 0.08}s`;
+            card.style.animationDelay = `${index * 0.07}s`;
+
+            const imgSrc = getProductImage(product.image, product._id);
+            const stockBadge = product.stock > 0
+                ? `<div class="stock-indicator in-stock">✦ In Stock (${product.stock})</div>`
+                : `<div class="stock-indicator no-stock">✦ Out of Stock</div>`;
+            const outOfStockOverlay = product.stock === 0
+                ? `<div class="out-of-stock-overlay">Sold Out</div>`
+                : '';
+
             card.innerHTML = `
         <div class="product-card-img-wrap">
-          <img class="product-card-img" src="${getProductImage(product.image, product._id)}" alt="${product.name}" 
-               onerror="this.src='https://picsum.photos/seed/${product._id}/400/300'">
-          ${product.stock === 0 ? '<div class="out-of-stock-overlay">Out of Stock</div>' : ''}
+          <img class="product-card-img"
+               src="${imgSrc}"
+               alt="${product.name}"
+               onerror="this.src='https://picsum.photos/seed/${product._id}/300/300'">
+          ${outOfStockOverlay}
         </div>
         <div class="product-card-body">
-          <div class="category">${product.category || 'General'}</div>
+          <div class="category">${product.category || 'Handmade'}</div>
           <h3>${product.name}</h3>
+          ${stockBadge}
           <div class="price">${formatPrice(product.price)}</div>
-          ${product.stock > 0
-                ? `<div class="stock-indicator in-stock">✅ In Stock (${product.stock})</div>`
-                : `<div class="stock-indicator no-stock">❌ Out of Stock</div>`
-            }
         </div>
       `;
-            card.addEventListener('click', () => {
-                window.location.href = `/product?id=${product._id}`;
-            });
+
+            if (product.stock > 0) {
+                card.addEventListener('click', () => {
+                    navigateTo(`/product?id=${product._id}`);
+                });
+            }
             grid.appendChild(card);
         });
     } catch (error) {
@@ -44,3 +55,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         grid.innerHTML = `<div class="cart-empty"><div class="icon">❌</div><h3>Error loading products</h3><p>${error.message}</p></div>`;
     }
 });
+
+// Page-exit helper (used by card clicks)
+function navigateTo(url) {
+    document.body.classList.add('page-exit');
+    setTimeout(() => { window.location.href = url; }, 340);
+}

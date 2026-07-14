@@ -94,6 +94,12 @@ function formatPrice(price) {
     return `₹${Number(price).toLocaleString('en-IN')}`;
 }
 
+// Page-exit transition helper
+function navigateTo(url) {
+    document.body.classList.add('page-exit');
+    setTimeout(function() { window.location.href = url; }, 340);
+}
+
 // Product image fallback
 function getProductImage(img, fallbackId = 'default') {
     return img && img !== '/images/placeholder.png'

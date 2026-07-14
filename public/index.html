@@ -1,65 +1,329 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Login to Swabodhini Autism Centre E-Commerce Store - Handmade products made with love">
-  <title>Login | Swabodhini Autism Centre</title>
-  <link rel="stylesheet" href="/css/style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Login to Swabodhini Autism Centre E-Commerce Store - handmade products made by autistic children and adults.">
+<title>Login | Swabodhini Autism Centre</title>
+<link rel="stylesheet" href="/css/style.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink-deep:#2B1B2E;
+    --ink-deep-2:#3B2440;
+    --marigold:#F0A93E;
+    --marigold-dark:#C9861F;
+    --terracotta:#D8663F;
+    --cream:#FBF1E4;
+    --cream-soft:#F4E6D3;
+    --rosewood:#6B2B3C;
+    --ink-text:#2B1B2E;
+    --radius-lg:20px;
+    --shadow-soft:0 18px 40px -18px rgba(43,27,46,0.55);
+    --font-display:'Fraunces', serif;
+    --font-body:'Work Sans', sans-serif;
+  }
+
+  *{ box-sizing:border-box; }
+
+  body{
+    margin:0;
+    font-family:var(--font-body);
+    background:
+      radial-gradient(ellipse at 15% 0%, rgba(216,102,63,0.25), transparent 55%),
+      radial-gradient(ellipse at 85% 100%, rgba(143,174,123,0.18), transparent 55%),
+      linear-gradient(180deg, var(--ink-deep) 0%, var(--ink-deep-2) 100%);
+    color:var(--cream);
+    min-height:100vh;
+  }
+
+  .page{ max-width:900px; margin:0 auto; padding:0 20px 60px; }
+
+  /* ---------- Banner ---------- */
+  .banner{
+    position:relative;
+    margin:0 -20px;
+    overflow:hidden;
+    border-bottom:1px solid rgba(251,241,228,0.08);
+  }
+  .banner-track{ position:relative; height:280px; }
+  .slide{
+    position:absolute; inset:0;
+    display:flex;
+    align-items:flex-end;
+    opacity:0;
+    transition:opacity .8s ease;
+  }
+  .slide.is-active{ opacity:1; z-index:1; }
+  .slide img{
+    position:absolute; inset:0;
+    width:100%; height:100%;
+    object-fit:cover;
+  }
+  .slide::after{
+    content:"";
+    position:absolute; inset:0;
+    background:linear-gradient(180deg, rgba(43,27,46,0.05) 30%, rgba(43,27,46,0.88) 100%);
+  }
+  .slide-caption{
+    position:relative; z-index:2;
+    padding:26px 28px 22px;
+  }
+  .slide-caption p.eyebrow{
+    margin:0 0 6px;
+    font-size:12.5px; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--marigold); font-weight:600;
+  }
+  .slide-caption h2{
+    font-family:var(--font-display); font-weight:600;
+    font-size:clamp(22px,4vw,30px);
+    line-height:1.15;
+    margin:0;
+    text-shadow:0 2px 12px rgba(0,0,0,0.35);
+  }
+
+  .banner-dots{
+    display:flex; justify-content:center; gap:8px;
+    position:absolute; bottom:14px; left:0; right:0; z-index:3;
+  }
+  .banner-dots button{
+    width:8px; height:8px; border-radius:50%; border:none;
+    background:rgba(251,241,228,0.4); cursor:pointer; padding:0;
+    transition:background .3s, width .3s;
+  }
+  .banner-dots button.is-active{ background:var(--marigold); width:22px; border-radius:5px; }
+
+  /* ---------- Auth ---------- */
+  .auth-page{ display:flex; justify-content:center; padding:44px 0 8px; background:transparent; }
+  .auth-container{ width:100%; max-width:400px; }
+  .auth-card{
+    background:var(--cream);
+    color:var(--ink-text);
+    border-radius:var(--radius-lg);
+    padding:34px 32px 30px;
+    box-shadow:var(--shadow-soft);
+  }
+  .auth-header{ text-align:center; margin-bottom:22px; }
+  .auth-logo{
+    width:46px; height:46px; margin:0 auto 14px;
+    border-radius:12px;
+    background:linear-gradient(135deg, var(--terracotta), var(--marigold));
+    color:var(--cream);
+    font-family:var(--font-display);
+    font-weight:700; font-size:22px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .auth-header h2{
+    font-family:var(--font-display); font-weight:600;
+    font-size:24px; margin:0 0 4px;
+  }
+  .auth-header p{ margin:0; font-size:14px; color:#6b5a6e; }
+
+  .alert{ display:none; }
+  .alert.show{
+    display:block; font-size:13.5px; padding:10px 12px;
+    border-radius:10px; margin-bottom:14px;
+  }
+  .alert.error{ background:#FBE2DA; color:#9C3B21; }
+  .alert.success{ background:#E7EFDF; color:#3D5A2C; }
+
+  .form-group{ margin-bottom:16px; }
+  .form-group label{
+    display:block; font-size:13px; font-weight:600;
+    margin-bottom:6px; color:#4a3a4d;
+  }
+  .form-group input{
+    width:100%; padding:12px 14px; font-size:15px;
+    border:1.5px solid #e3d5c3; border-radius:10px;
+    background:#fffaf2; color:var(--ink-text);
+    font-family:var(--font-body);
+  }
+  .form-group input:focus{
+    outline:2px solid var(--marigold-dark); outline-offset:1px;
+    border-color:var(--marigold-dark);
+  }
+
+  .btn{
+    width:100%; padding:13px; font-size:15px; font-weight:600;
+    border:none; border-radius:10px; cursor:pointer;
+    font-family:var(--font-body);
+  }
+  .btn-primary{ background:var(--rosewood); color:var(--cream); transition:background .2s; }
+  .btn-primary:hover{ background:#551f2e; }
+  .btn-primary:focus-visible{ outline:2px solid var(--marigold); outline-offset:2px; }
+
+  .auth-footer{ text-align:center; margin-top:16px; font-size:13.5px; color:#6b5a6e; }
+  .auth-footer a{ color:var(--rosewood); font-weight:600; text-decoration:underline; }
+
+  @media (max-width:520px){
+    .banner-track{ height:230px; }
+    .auth-card{ padding:28px 22px 26px; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .slide{ transition:opacity .3s ease; }
+  }
+</style>
 </head>
 <body>
-  <div class="auth-page">
-    <!-- Login Form -->
-    <div class="auth-container" id="loginSection">
-      <div class="auth-card">
-        <div class="auth-header">
-          <div class="auth-logo">S</div>
-          <h2>Welcome Back</h2>
-          <p>Login to Swabodhini E-Commerce Store</p>
-        </div>
-        <div id="loginAlert" class="alert"></div>
-        <form id="loginForm">
-          <div class="form-group">
-            <label for="loginPhone">Phone Number</label>
-            <input type="tel" id="loginPhone" placeholder="Enter your phone number" required
-              pattern="[0-9]{10}" maxlength="10" title="Please enter a valid 10-digit phone number">
-          </div>
-          <button type="submit" class="btn btn-primary" id="loginBtn">Login</button>
-        </form>
-        <div class="auth-footer">
-          <p>Don't have an account? <a href="#" id="showSignup">Sign Up</a></p>
-        </div>
-      </div>
-    </div>
+  <div class="page">
 
-    <!-- Signup Form -->
-    <div class="auth-container" id="signupSection" style="display:none;">
-      <div class="auth-card">
-        <div class="auth-header">
-          <div class="auth-logo">S</div>
-          <h2>Create Account</h2>
-          <p>Join Swabodhini E-Commerce Store</p>
+    <!-- Banner -->
+    <section class="banner" id="banner" aria-label="About our products">
+      <div class="banner-track" id="bannerTrack">
+
+        <div class="slide is-active">
+          <img src="/images/banner-1.jpg" alt="Handmade products by Swabodhini artisans">
+          <div class="slide-caption">
+            <p class="eyebrow">Swabodhini Autism Centre</p>
+            <h2>Made by hand. Made with heart.</h2>
+          </div>
         </div>
-        <div id="signupAlert" class="alert"></div>
-        <form id="signupForm">
-          <div class="form-group">
-            <label for="signupName">Full Name</label>
-            <input type="text" id="signupName" placeholder="Enter your full name" required>
+
+        <div class="slide">
+          <img src="/images/banner-2.jpg" alt="Diyas, jute bags and home decor by autistic artisans">
+          <div class="slide-caption">
+            <p class="eyebrow">Festive &amp; Home</p>
+            <h2>Crafted by autistic children &amp; adults</h2>
           </div>
-          <div class="form-group">
-            <label for="signupPhone">Phone Number</label>
-            <input type="tel" id="signupPhone" placeholder="Enter your 10-digit phone number" required
-              pattern="[0-9]{10}" maxlength="10" title="Please enter a valid 10-digit phone number">
+        </div>
+
+        <div class="slide">
+          <img src="/images/banner-3.jpg" alt="Jewellery and accessories by autistic artisans">
+          <div class="slide-caption">
+            <p class="eyebrow">Fashion &amp; Accessories</p>
+            <h2>Every purchase supports their independence</h2>
           </div>
-          <button type="submit" class="btn btn-primary" id="signupBtn">Create Account</button>
-        </form>
-        <div class="auth-footer">
-          <p>Already have an account? <a href="#" id="showLogin">Login</a></p>
+        </div>
+
+        <div class="slide">
+          <img src="/images/banner-4.jpg" alt="Baked treats and snacks by autistic artisans">
+          <div class="slide-caption">
+            <p class="eyebrow">Treats &amp; Snacks</p>
+            <h2>Baked fresh, made with care</h2>
+          </div>
+        </div>
+
+      </div>
+      <div class="banner-dots" id="bannerDots"></div>
+    </section>
+
+    <!-- Login / Signup -->
+    <section class="auth-page">
+      <div class="auth-container" id="loginSection">
+        <div class="auth-card">
+          <div class="auth-header">
+            <div class="auth-logo">S</div>
+            <h2>Welcome Back</h2>
+            <p>Login to Swabodhini E-Commerce Store</p>
+          </div>
+          <div id="loginAlert" class="alert"></div>
+          <form id="loginForm">
+            <div class="form-group">
+              <label for="loginPhone">Phone Number</label>
+              <input type="tel" id="loginPhone" placeholder="Enter your phone number" required
+                pattern="[0-9]{10}" maxlength="10" title="Please enter a valid 10-digit phone number">
+            </div>
+            <button type="submit" class="btn btn-primary" id="loginBtn">Login</button>
+          </form>
+          <div class="auth-footer">
+            <p>Don't have an account? <a href="#" id="showSignup">Sign Up</a></p>
+          </div>
         </div>
       </div>
-    </div>
+
+      <div class="auth-container" id="signupSection" style="display:none;">
+        <div class="auth-card">
+          <div class="auth-header">
+            <div class="auth-logo">S</div>
+            <h2>Create Account</h2>
+            <p>Join Swabodhini E-Commerce Store</p>
+          </div>
+          <div id="signupAlert" class="alert"></div>
+          <form id="signupForm">
+            <div class="form-group">
+              <label for="signupName">Full Name</label>
+              <input type="text" id="signupName" placeholder="Enter your full name" required>
+            </div>
+            <div class="form-group">
+              <label for="signupPhone">Phone Number</label>
+              <input type="tel" id="signupPhone" placeholder="Enter your 10-digit phone number" required
+                pattern="[0-9]{10}" maxlength="10" title="Please enter a valid 10-digit phone number">
+            </div>
+            <button type="submit" class="btn btn-primary" id="signupBtn">Create Account</button>
+          </form>
+          <div class="auth-footer">
+            <p>Already have an account? <a href="#" id="showLogin">Login</a></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
   </div>
 
   <script src="/js/auth.js"></script>
+  <script>
+    // Banner carousel — independent of auth.js
+    (function(){
+      var track = document.getElementById('bannerTrack');
+      var slides = track.querySelectorAll('.slide');
+      var dotsWrap = document.getElementById('bannerDots');
+      var current = 0;
+      var timer;
+
+      slides.forEach(function(_, i){
+        var dot = document.createElement('button');
+        dot.setAttribute('aria-label', 'Show slide ' + (i + 1));
+        if (i === 0) dot.classList.add('is-active');
+        dot.addEventListener('click', function(){ goTo(i); restart(); });
+        dotsWrap.appendChild(dot);
+      });
+      var dots = dotsWrap.querySelectorAll('button');
+
+      function goTo(i){
+        slides[current].classList.remove('is-active');
+        dots[current].classList.remove('is-active');
+        current = i;
+        slides[current].classList.add('is-active');
+        dots[current].classList.add('is-active');
+      }
+
+      function next(){ goTo((current + 1) % slides.length); }
+
+      function restart(){
+        clearInterval(timer);
+        timer = setInterval(next, 4000);
+      }
+
+      track.addEventListener('mouseenter', function(){ clearInterval(timer); });
+      track.addEventListener('mouseleave', restart);
+
+      restart();
+    })();
+
+    // Login / Signup toggle (kept in case auth.js does not already bind these)
+    (function(){
+      var showSignup = document.getElementById('showSignup');
+      var showLogin = document.getElementById('showLogin');
+      var loginSection = document.getElementById('loginSection');
+      var signupSection = document.getElementById('signupSection');
+      if (showSignup && !showSignup.dataset.bound) {
+        showSignup.addEventListener('click', function(e){
+          e.preventDefault();
+          loginSection.style.display = 'none';
+          signupSection.style.display = 'block';
+        });
+      }
+      if (showLogin && !showLogin.dataset.bound) {
+        showLogin.addEventListener('click', function(e){
+          e.preventDefault();
+          signupSection.style.display = 'none';
+          loginSection.style.display = 'block';
+        });
+      }
+    })();
+  </script>
 </body>
 </html>

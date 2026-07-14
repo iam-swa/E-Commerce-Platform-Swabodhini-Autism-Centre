@@ -1,10 +1,16 @@
+// ── Page transition helper ──
+function navigateTo(url) {
+    document.body.classList.add('page-exit');
+    setTimeout(function() { window.location.href = url; }, 340);
+}
+
 // Check if user is already logged in
 if (localStorage.getItem('token')) {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     if (user.role === 'admin') {
-        window.location.href = '/admin-dashboard';
+        navigateTo('/admin-dashboard');
     } else {
-        window.location.href = '/landing';
+        navigateTo('/landing');
     }
 }
 
@@ -72,8 +78,8 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
 
         showAlert('loginAlert', 'Login successful! Redirecting...', 'success');
         setTimeout(() => {
-            window.location.href = data.user.role === 'admin' ? '/admin-dashboard' : '/landing';
-        }, 500);
+            navigateTo(data.user.role === 'admin' ? '/admin-dashboard' : '/landing');
+        }, 400);
     } catch (error) {
         showAlert('loginAlert', error.message, 'error');
     } finally {
@@ -127,7 +133,7 @@ document.getElementById('signupForm').addEventListener('submit', async (e) => {
         localStorage.setItem('user', JSON.stringify(data.user));
 
         showAlert('signupAlert', 'Account created! Redirecting...', 'success');
-        setTimeout(() => { window.location.href = '/landing'; }, 500);
+        setTimeout(() => { navigateTo('/landing'); }, 400);
     } catch (error) {
         showAlert('signupAlert', error.message, 'error');
     } finally {
