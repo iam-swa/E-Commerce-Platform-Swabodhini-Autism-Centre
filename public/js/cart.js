@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             return `
         <div class="cart-item">
           <img class="cart-item-img" src="${getProductImage(product.image, product._id)}" alt="${product.name}"
-               onerror="this.src='https://picsum.photos/seed/${product._id}/200/200'">
+               onerror="this.src='/images/placeholder.svg'">
           <div class="cart-item-info">
             <h3>${product.name}</h3>
             <div class="price">${formatPrice(product.price)}</div>

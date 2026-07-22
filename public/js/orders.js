@@ -71,7 +71,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <div class="order-card-products">
             ${order.products.map(p => `
               <div class="order-product-item">
-                <img src="${getProductImage(p.image, p._id)}" alt="${p.name}" onerror="this.src='https://picsum.photos/seed/${p._id}/80/80'">
+                <img src="${getProductImage(p.image, p._id)}" alt="${p.name}" onerror="this.src='/images/placeholder.svg'">
                 <span>${p.name} × ${p.quantity}</span>
                 <span style="margin-left:auto;color:var(--accent);font-weight:600;">${formatPrice(p.price * p.quantity)}</span>
               </div>

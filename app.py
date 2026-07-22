@@ -30,7 +30,14 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 
 # Ensure upload directories exist
 os.makedirs(UPLOAD_PRODUCTS, exist_ok=True)
-os.makedirs(UPLOAD_PAYMENTS, exist_ok=True)
+
+@app.after_request
+def add_header(response):
+    if request.path.startswith('/api/'):
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '-1'
+    return response
 
 
 # ────────────────────── DATABASE ──────────────────────

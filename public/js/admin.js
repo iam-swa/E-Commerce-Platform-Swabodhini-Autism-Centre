@@ -49,12 +49,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (imageFile) formData.append('image', imageFile);
 
         try {
-            const token = getToken();
             const url = id ? `/api/products/${id}` : '/api/products';
             const method = id ? 'PUT' : 'POST';
-            const res = await fetch(url, { method, headers: { 'Authorization': `Bearer ${token}` }, body: formData });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.message);
+            const data = await apiCall(url, { method, body: formData });
             showToast(data.message);
             modal.classList.remove('active');
             loadProducts();
@@ -70,13 +67,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const body = document.getElementById('productsBody');
         loading.style.display = 'flex';
         try {
-            const token = getToken();
-            const res = await fetch('/api/products/all', { headers: { 'Authorization': `Bearer ${token}` } });
-            const products = await res.json();
+            const products = await apiCall('/api/products/all');
             loading.style.display = 'none';
             body.innerHTML = products.map(p => `
         <tr>
-          <td><img src="${getProductImage(p.image)}" alt="${p.name}" onerror="this.src='https://picsum.photos/seed/${p._id}/100/100'"></td>
+          <td><img src="${getProductImage(p.image)}" alt="${p.name}" onerror="this.src='/images/placeholder.svg'"></td>
           <td><strong>${p.name}</strong></td>
           <td>${formatPrice(p.price)}</td>
           <td>${p.category}</td>

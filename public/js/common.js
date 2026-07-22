@@ -27,7 +27,14 @@ async function apiCall(url, options = {}) {
     }
     const fetchOptions = { ...options, headers };
     fetchOptions.cache = 'no-store';
-    const res = await fetch(url, fetchOptions);
+    
+    let finalUrl = url;
+    if (!options.method || options.method.toUpperCase() === 'GET') {
+        const separator = url.includes('?') ? '&' : '?';
+        finalUrl = `${url}${separator}_t=${Date.now()}`;
+    }
+    
+    const res = await fetch(finalUrl, fetchOptions);
     const data = await res.json();
     if (res.status === 401) {
         localStorage.clear();
@@ -104,7 +111,7 @@ function navigateTo(url) {
 function getProductImage(img, fallbackId = 'default') {
     return img && img !== '/images/placeholder.png'
         ? img
-        : `https://picsum.photos/seed/${fallbackId}/400/300`;
+        : '/images/placeholder.svg';
 }
 
 // ── Location: request once per session, send to backend ────────────────────

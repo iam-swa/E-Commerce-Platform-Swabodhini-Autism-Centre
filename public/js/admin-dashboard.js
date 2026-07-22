@@ -11,7 +11,7 @@ function formatPrice(price) {
 function getProductImage(img, fallbackId = 'default') {
     return img && img !== '/images/placeholder.png'
         ? img
-        : `https://picsum.photos/seed/${fallbackId}/400/300`;
+        : '/images/placeholder.svg';
 }
 
 async function apiCall(url, options = {}) {
@@ -24,7 +24,14 @@ async function apiCall(url, options = {}) {
     const fetchOptions = { ...options, headers };
     // Force no caching for all API calls
     fetchOptions.cache = 'no-store';
-    const res = await fetch(url, fetchOptions);
+    
+    let finalUrl = url;
+    if (!options.method || options.method.toUpperCase() === 'GET') {
+        const separator = url.includes('?') ? '&' : '?';
+        finalUrl = `${url}${separator}_t=${Date.now()}`;
+    }
+    
+    const res = await fetch(finalUrl, fetchOptions);
     const data = await res.json();
     if (res.status === 401 || res.status === 403) {
         localStorage.clear();
@@ -102,11 +109,16 @@ document.addEventListener('DOMContentLoaded', () => {
             addProductHeaderBtn.style.display = panel === 'products' ? 'inline-flex' : 'none';
 
             // Load data for panel
-            if (panel === 'dashboard') loadDashboard();
-            else if (panel === 'products') loadProducts();
-            else if (panel === 'orders') loadOrders();
-            else if (panel === 'stock') loadStock();
-            else if (panel === 'users') loadUsers();
+            if (panel === 'dashboard') {
+                document.body.classList.remove('admin-fixed-layout');
+                loadDashboard();
+            } else {
+                document.body.classList.add('admin-fixed-layout');
+                if (panel === 'products') loadProducts();
+                else if (panel === 'orders') loadOrders();
+                else if (panel === 'stock') loadStock();
+                else if (panel === 'users') loadUsers();
+            }
 
             // Close mobile sidebar
             document.getElementById('sidebar').classList.remove('open');
@@ -237,9 +249,7 @@ async function loadProducts() {
     loading.style.display = 'flex';
 
     try {
-        const token = getToken();
-        const res = await fetch('/api/products/all', { headers: { 'Authorization': `Bearer ${token}` } });
-        const products = await res.json();
+        const products = await apiCall('/api/products/all');
         loading.style.display = 'none';
 
         if (products.length === 0) {
@@ -252,7 +262,7 @@ async function loadProducts() {
             const rowClass = p.stock < 5 ? 'row-low-stock' : '';
             return `
                 <tr class="${rowClass}">
-                    <td><img src="${getProductImage(p.image, p._id)}" alt="${p.name}" onerror="this.src='https://picsum.photos/seed/${p._id}/100/100'"></td>
+                    <td><img src="${getProductImage(p.image, p._id)}" alt="${p.name}" onerror="this.src='/images/placeholder.svg'"></td>
                     <td><strong>${p.name}</strong></td>
                     <td>${formatPrice(p.price)}</td>
                     <td><span class="badge badge-neutral">${p.category || 'General'}</span></td>
@@ -336,12 +346,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (imageFile) formData.append('image', imageFile);
 
         try {
-            const token = getToken();
             const url = id ? `/api/products/${id}` : '/api/products';
             const method = id ? 'PUT' : 'POST';
-            const res = await fetch(url, { method, headers: { 'Authorization': `Bearer ${token}` }, body: formData });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.message);
+            const data = await apiCall(url, { method, body: formData });
 
             showToast(data.message);
             productModal.classList.remove('active');

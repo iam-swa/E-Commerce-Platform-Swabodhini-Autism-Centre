@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.title = `${product.name} | Swabodhini`;
         document.getElementById('productImage').src = getProductImage(product.image, product._id);
         document.getElementById('productImage').onerror = function () {
-            this.src = `https://picsum.photos/seed/${product._id}/600/450`;
+            this.src = '/images/placeholder.svg';
         };
         document.getElementById('productName').textContent = product.name;
         document.getElementById('productCategory').textContent = product.category || 'General';
@@ -149,7 +149,7 @@ async function loadRecommendations(productId) {
                     class="rec-card-img"
                     src="${getProductImage(p.image, p._id)}"
                     alt="${escapeHtml(p.name)}"
-                    onerror="this.src='https://picsum.photos/seed/${p._id}/400/300'"
+                    onerror="this.src='/images/placeholder.svg'"
                     loading="lazy"
                 />
                 <div class="rec-card-body">

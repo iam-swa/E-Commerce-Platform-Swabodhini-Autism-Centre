@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <img class="product-card-img"
                src="${imgSrc}"
                alt="${product.name}"
-               onerror="this.src='https://picsum.photos/seed/${product._id}/300/300'">
+               onerror="this.src='/images/placeholder.svg'">
           ${outOfStockOverlay}
         </div>
         <div class="product-card-body">
