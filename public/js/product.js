@@ -153,7 +153,6 @@ async function loadRecommendations(productId) {
                     loading="lazy"
                 />
                 <div class="rec-card-body">
-                    <div class="rec-card-category">${escapeHtml(p.category || 'General')}</div>
                     <div class="rec-card-name">${escapeHtml(p.name)}</div>
                     <div class="rec-card-price">${formatPrice(p.price)}</div>
                 </div>

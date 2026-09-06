@@ -72,13 +72,28 @@ document.addEventListener('DOMContentLoaded', () => {
             formData.append('products', JSON.stringify(products));
 
             const token = getToken();
+            if (!token) {
+                showToast('Please log in to place an order.', 'error');
+                setTimeout(() => { window.location.href = '/'; }, 1000);
+                return;
+            }
+
             const res = await fetch('/api/orders', {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` },
                 body: formData
             });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.message);
+
+            let data;
+            try {
+                data = await res.json();
+            } catch (jsonErr) {
+                throw new Error(`Server returned unexpected response (${res.status}). Please try again.`);
+            }
+
+            if (!res.ok) {
+                throw new Error(data.message || `Failed to place order (${res.status})`);
+            }
 
             // Clear checkout data
             localStorage.removeItem('checkoutCart');
@@ -88,9 +103,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             setTimeout(() => {
                 window.location.href = '/orders';
-            }, 1500);
+            }, 1200);
         } catch (error) {
-            showToast(error.message, 'error');
+            showToast(error.message || 'Something went wrong while placing your order', 'error');
         } finally {
             btn.textContent = '✅ Confirm Order';
             btn.disabled = false;

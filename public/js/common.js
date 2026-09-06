@@ -90,6 +90,17 @@ function setupNavbar() {
         const user = getUser();
         userName.textContent = user.name || 'Account';
     }
+    const accountBtn = document.getElementById('accountBtn');
+    if (accountBtn) {
+        accountBtn.addEventListener('click', () => {
+            const user = getUser();
+            if (user.role === 'admin') {
+                navigateTo('/admin-dashboard');
+            } else {
+                navigateTo('/orders');
+            }
+        });
+    }
     window.addEventListener('scroll', () => {
         const navbar = document.getElementById('navbar');
         if (navbar) navbar.classList.toggle('scrolled', window.scrollY > 20);

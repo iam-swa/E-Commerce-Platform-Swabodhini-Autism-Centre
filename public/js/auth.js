@@ -118,6 +118,7 @@ document.getElementById('signupForm').addEventListener('submit', async (e) => {
     btn.disabled = true;
 
     const name = document.getElementById('signupName').value.trim();
+    const email = document.getElementById('signupEmail').value.trim();
     const phone = document.getElementById('signupPhone').value.trim();
 
     // Validate phone
@@ -127,12 +128,20 @@ document.getElementById('signupForm').addEventListener('submit', async (e) => {
         btn.disabled = false;
         return;
     }
+    
+    // Validate email
+    if (!email || !/\S+@\S+\.\S+/.test(email)) {
+        showAlert('signupAlert', 'Please enter a valid email address.', 'error');
+        btn.textContent = 'Create Account';
+        btn.disabled = false;
+        return;
+    }
 
     try {
         const res = await fetch('/api/auth/signup', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, phone })
+            body: JSON.stringify({ name, email, phone })
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.message);

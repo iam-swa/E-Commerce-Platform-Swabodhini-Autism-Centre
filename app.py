@@ -18,7 +18,7 @@ load_dotenv()
 
 app = Flask(__name__, static_folder='public', static_url_path='')
 CORS(app)
-app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024  # 5MB max upload
+app.config['MAX_CONTENT_LENGTH'] = 20 * 1024 * 1024  # 20MB max upload
 
 SECRET_KEY = os.getenv('JWT_SECRET', 'swabodhini_autism_centre_jwt_secret_key_2024')
 PORT = int(os.getenv('PORT', 5000))
@@ -30,6 +30,7 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 
 # Ensure upload directories exist
 os.makedirs(UPLOAD_PRODUCTS, exist_ok=True)
+os.makedirs(UPLOAD_PAYMENTS, exist_ok=True)
 
 @app.after_request
 def add_header(response):
@@ -265,17 +266,75 @@ def create_token(user_id):
     )
 
 
+def send_email(to_email, subject, body):
+    """
+    Send a real email via Gmail SMTP using credentials from .env.
+    Requires EMAIL_USER and EMAIL_PASSWORD (Gmail App Password) to be set.
+    """
+    import smtplib
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
+
+    email_user     = os.getenv('EMAIL_USER', '')
+    email_password = os.getenv('EMAIL_PASSWORD', '')
+    email_host     = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+    email_port     = int(os.getenv('EMAIL_PORT', 587))
+    from_name      = os.getenv('EMAIL_FROM_NAME', 'Swabodhini Autism Centre')
+
+    if not email_user or not email_password or 'your_' in email_user or 'your_' in email_password:
+        print(f"[Email] Skipped (EMAIL_USER / EMAIL_PASSWORD not configured). Would have sent to: {to_email}")
+        return
+
+    try:
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = subject
+        msg['From']    = f"{from_name} <{email_user}>"
+        msg['To']      = to_email
+
+        # Plain-text part
+        msg.attach(MIMEText(body, 'plain'))
+
+        # HTML part (nicer-looking email)
+        html_body = f"""
+        <html>
+          <body style="font-family:Arial,sans-serif;background:#f4f8fb;padding:30px;">
+            <div style="max-width:520px;margin:auto;background:#fff;border-radius:12px;
+                        padding:32px;box-shadow:0 4px 18px rgba(0,0,0,0.08);">
+              <h2 style="color:#0D1B3E;margin-top:0;">&#127670; {subject}</h2>
+              <p style="color:#333;line-height:1.7;">{body.replace(chr(10), '<br>')}</p>
+              <hr style="border:none;border-top:1px solid #e0e0e0;margin:24px 0;">
+              <p style="font-size:12px;color:#888;">
+                Swabodhini Autism Centre E-Commerce Store<br>
+                This is an automated email. Please do not reply.
+              </p>
+            </div>
+          </body>
+        </html>
+        """
+        msg.attach(MIMEText(html_body, 'html'))
+
+        with smtplib.SMTP(email_host, email_port) as server:
+            server.ehlo()
+            server.starttls()
+            server.login(email_user, email_password)
+            server.sendmail(email_user, to_email, msg.as_string())
+
+        print(f"[Email] ✅ Sent '{subject}' to {to_email}")
+    except Exception as e:
+        print(f"[Email] ❌ Failed to send to {to_email}: {e}")
+
 # ────────────────────── AUTH ROUTES ──────────────────────
 
 @app.route('/api/auth/signup', methods=['POST'])
 def signup():
-    """Simple signup with just name and phone number."""
+    """Simple signup with name, email, and phone number."""
     data = request.get_json()
     name = data.get('name', '').strip()
+    email = data.get('email', '').strip()
     phone = data.get('phone', '').strip()
 
-    if not name or not phone:
-        return jsonify({'message': 'Name and phone number are required.'}), 400
+    if not name or not phone or not email:
+        return jsonify({'message': 'Name, email, and phone number are required.'}), 400
 
     import re
     if not re.match(r'^\d{10}$', phone):
@@ -288,8 +347,8 @@ def signup():
 
     user_id = generate_id()
     db.execute(
-        "INSERT INTO users (_id, name, phone, isVerified, role) VALUES (?,?,?,?,?)",
-        (user_id, name, phone, 1, 'user')
+        "INSERT INTO users (_id, name, email, phone, isVerified, role) VALUES (?,?,?,?,?,?)",
+        (user_id, name, email, phone, 1, 'user')
     )
     db.commit()
 
@@ -654,7 +713,9 @@ def create_order():
                     'message': f'Insufficient stock for "{prod_row["name"]}". Available: {prod_row["stock"]}, Requested: {qty}'
                 }), 400
 
-    filename = f"payment-{request.user['_id']}-{int(datetime.datetime.utcnow().timestamp() * 1000)}{os.path.splitext(secure_filename(file.filename))[1]}"
+    os.makedirs(UPLOAD_PAYMENTS, exist_ok=True)
+    ext = os.path.splitext(file.filename)[1] or '.png'
+    filename = f"payment-{request.user['_id']}-{int(datetime.datetime.utcnow().timestamp() * 1000)}{ext}"
     file.save(os.path.join(UPLOAD_PAYMENTS, filename))
     screenshot_path = f'/uploads/payments/{filename}'
 
@@ -788,6 +849,14 @@ def update_order_status(order_id):
     order['user'] = row_to_dict(user) if user else None
     prods = db.execute("SELECT * FROM order_products WHERE order_id = ?", (order_id,)).fetchall()
     order['products'] = rows_to_list(prods)
+    
+    # Send email if delivered
+    if status == 'Delivered' and order['user'] and order['user'].get('email'):
+        send_email(
+            to_email=order['user']['email'],
+            subject="Your Order has been Delivered!",
+            body=f"Hello {order['user']['name']},\n\nGood news! Your order (ID: {order_id}) has been delivered successfully.\nThank you for shopping at Swabodhini Autism Centre E-Commerce Store."
+        )
 
     return jsonify({'message': f'Order status updated to "{status}"!', 'order': order})
 
@@ -895,6 +964,14 @@ def deliver_order(order_id):
     order['user'] = row_to_dict(user) if user else None
     prods = db.execute("SELECT * FROM order_products WHERE order_id = ?", (order_id,)).fetchall()
     order['products'] = rows_to_list(prods)
+    
+    if order['user'] and order['user'].get('email'):
+        send_email(
+            to_email=order['user']['email'],
+            subject="Your Order has been Delivered!",
+            body=f"Hello {order['user']['name']},\n\nGood news! Your order (ID: {order_id}) has been delivered successfully.\nThank you for shopping at Swabodhini Autism Centre E-Commerce Store."
+        )
+
     return jsonify({'message': 'Order delivered successfully!', 'order': order})
 
 

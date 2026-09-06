@@ -76,7 +76,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const panels = document.querySelectorAll('.panel');
     const pageTitle = document.getElementById('pageTitle');
     const pageSubtitle = document.getElementById('pageSubtitle');
-    const addProductHeaderBtn = document.getElementById('addProductHeaderBtn');
 
     const titles = {
         dashboard: { title: 'Dashboard Overview', subtitle: "Welcome back! Here's what's happening today." },
@@ -86,45 +85,52 @@ document.addEventListener('DOMContentLoaded', () => {
         users: { title: 'Registered Users', subtitle: 'View all registered customers and their details.' }
     };
 
+    function activatePanel(panel) {
+        // Update active states
+        sidebarLinks.forEach(l => l.classList.remove('active'));
+        const activeLink = document.querySelector(`.sidebar-link[data-panel="${panel}"]`);
+        if (activeLink) activeLink.classList.add('active');
+
+        // Switch panels
+        panels.forEach(p => p.classList.remove('active'));
+        const target = document.getElementById(`panel-${panel}`);
+        if (target) target.classList.add('active');
+
+        // Update header
+        if (titles[panel]) {
+            pageTitle.textContent = titles[panel].title;
+            pageSubtitle.textContent = titles[panel].subtitle;
+        }
+
+        // Load data for panel
+        if (panel === 'dashboard') {
+            document.body.classList.remove('admin-fixed-layout');
+            loadDashboard();
+        } else {
+            document.body.classList.add('admin-fixed-layout');
+            if (panel === 'products') loadProducts();
+            else if (panel === 'orders') loadOrders();
+            else if (panel === 'stock') loadStock();
+            else if (panel === 'users') loadUsers();
+        }
+
+        // Close mobile sidebar
+        document.getElementById('sidebar').classList.remove('open');
+        document.getElementById('sidebarOverlay').classList.remove('active');
+    }
+
     sidebarLinks.forEach(link => {
         link.addEventListener('click', () => {
-            const panel = link.dataset.panel;
-
-            // Update active states
-            sidebarLinks.forEach(l => l.classList.remove('active'));
-            link.classList.add('active');
-
-            // Switch panels
-            panels.forEach(p => p.classList.remove('active'));
-            const target = document.getElementById(`panel-${panel}`);
-            if (target) target.classList.add('active');
-
-            // Update header
-            if (titles[panel]) {
-                pageTitle.textContent = titles[panel].title;
-                pageSubtitle.textContent = titles[panel].subtitle;
-            }
-
-            // Show/hide add product button
-            addProductHeaderBtn.style.display = panel === 'products' ? 'inline-flex' : 'none';
-
-            // Load data for panel
-            if (panel === 'dashboard') {
-                document.body.classList.remove('admin-fixed-layout');
-                loadDashboard();
-            } else {
-                document.body.classList.add('admin-fixed-layout');
-                if (panel === 'products') loadProducts();
-                else if (panel === 'orders') loadOrders();
-                else if (panel === 'stock') loadStock();
-                else if (panel === 'users') loadUsers();
-            }
-
-            // Close mobile sidebar
-            document.getElementById('sidebar').classList.remove('open');
-            document.getElementById('sidebarOverlay').classList.remove('active');
+            activatePanel(link.dataset.panel);
         });
     });
+
+    // Make sidebar header branding clickable to go to dashboard
+    const sidebarHeader = document.querySelector('.sidebar-header');
+    if (sidebarHeader) {
+        sidebarHeader.style.cursor = 'pointer';
+        sidebarHeader.addEventListener('click', () => activatePanel('dashboard'));
+    }
 
     // Mobile sidebar
     const sidebarToggle = document.getElementById('sidebarToggle');
@@ -145,9 +151,6 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.clear();
         window.location.href = '/';
     });
-
-    // Add Product header button
-    addProductHeaderBtn.addEventListener('click', () => openProductModal());
 
     // Load initial dashboard
     loadDashboard();
