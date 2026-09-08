@@ -12,6 +12,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
+        // Sort alphabetically (A to Z) by name
+        products.sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' }));
+
         // Staggered entrance animation
         products.forEach((product, index) => {
             const card = document.createElement('div');

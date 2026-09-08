@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: swabodhini-ecommerce
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT
+    envVars:
+      - key: DATABASE_URL
+        sync: false        # Set this manually in Render dashboard from NeonDB
+      - key: JWT_SECRET
+        sync: false        # Set a strong random secret in Render dashboard
+      - key: PORT
+        value: 5000
+      - key: EMAIL_USER
+        sync: false        # Optional: Gmail address for order emails
+      - key: EMAIL_PASSWORD
+        sync: false        # Optional: Gmail App Password

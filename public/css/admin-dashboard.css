@@ -2,18 +2,18 @@
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=Work+Sans:wght@400;500;600;700&display=swap');
 
 :root {
-    /* ── Blue Autism-Aware Brand Palette ── */
-    --navy:          #0D1B3E;
-    --navy-2:        #152347;
-    --navy-sidebar:  #0A1530;
-    --sky:           #4A9EDA;
-    --sky-light:     #72BEF4;
-    --teal:          #2ECAC8;
-    --teal-soft:     #3DD9D7;
-    --periwinkle:    #7B9FE8;
-    --ice:           #E8F4FD;
-    --ice-soft:      #D6EBF9;
-    --cobalt:        #1B54B8;
+    /* ── Official Autism Speaks Blue #00AEEF (Light It Up Blue) ── */
+    --navy:          #062040;
+    --navy-2:        #0A2B52;
+    --navy-sidebar:  #041830;
+    --sky:           #00AEEF;
+    --sky-light:     #4DCDF5;
+    --teal:          #00C4B4;
+    --teal-soft:     #1DD9CA;
+    --periwinkle:    #5B9BD5;
+    --ice:           #E6F7FD;
+    --ice-soft:      #C8EEFA;
+    --cobalt:        #0055A0;
 
     /* ── Compat aliases ── */
     --primary:        var(--sky);
@@ -25,42 +25,42 @@
     /* ── Surfaces ── */
     --bg-dark:        var(--navy);
     --bg-sidebar:     var(--navy-sidebar);
-    --bg-card:        rgba(74,158,218,0.07);
-    --bg-card-hover:  rgba(74,158,218,0.13);
-    --bg-input:       rgba(74,158,218,0.09);
+    --bg-card:        rgba(0,174,239,0.07);
+    --bg-card-hover:  rgba(0,174,239,0.14);
+    --bg-input:       rgba(0,174,239,0.09);
     --bg-main:        transparent;
 
     /* ── Text ── */
     --text-primary:   var(--ice);
-    --text-secondary: rgba(232,244,253,0.72);
-    --text-muted:     rgba(232,244,253,0.42);
+    --text-secondary: rgba(230,247,253,0.72);
+    --text-muted:     rgba(230,247,253,0.42);
 
     /* ── Border ── */
-    --border:         rgba(74,158,218,0.16);
-    --border-light:   rgba(74,158,218,0.24);
+    --border:         rgba(0,174,239,0.18);
+    --border-light:   rgba(0,174,239,0.28);
 
     /* ── Status ── */
     --success:  #2ED573;
     --warning:  #FFA502;
     --danger:   #FF4757;
-    --info:     #45aaf2;
+    --info:     #00AEEF;
 
     /* ── Gradients ── */
     --gradient-1: linear-gradient(135deg, var(--sky)    0%, var(--teal)   100%);
     --gradient-2: linear-gradient(135deg, var(--cobalt) 0%, var(--sky)    100%);
-    --gradient-3: linear-gradient(135deg, #4ECDC4       0%, #2ED573       100%);
-    --gradient-4: linear-gradient(135deg, #45aaf2       0%, var(--cobalt) 100%);
+    --gradient-3: linear-gradient(135deg, #00C4B4       0%, #2ED573       100%);
+    --gradient-4: linear-gradient(135deg, #4DCDF5       0%, var(--cobalt) 100%);
     --bg-gradient:
-        radial-gradient(ellipse at 15% 0%,   rgba(46,202,200,0.16), transparent 55%),
-        radial-gradient(ellipse at 85% 100%, rgba(74,158,218,0.12), transparent 55%),
+        radial-gradient(ellipse at 15% 0%,   rgba(0,174,239,0.20), transparent 55%),
+        radial-gradient(ellipse at 85% 100%, rgba(0,196,180,0.14), transparent 55%),
         linear-gradient(180deg, var(--navy) 0%, var(--navy-2) 100%);
 
     /* ── Shadows ── */
-    --shadow-sm:   0 2px 8px  rgba(13,27,62,0.35);
-    --shadow-md:   0 4px 20px rgba(13,27,62,0.45);
-    --shadow-lg:   0 8px 40px rgba(13,27,62,0.55);
-    --shadow-glow: 0 0 30px   rgba(74,158,218,0.16);
-    --shadow-card: 0 4px 24px rgba(13,27,62,0.38);
+    --shadow-sm:   0 2px 8px  rgba(6,32,64,0.35);
+    --shadow-md:   0 4px 20px rgba(6,32,64,0.45);
+    --shadow-lg:   0 8px 40px rgba(6,32,64,0.55);
+    --shadow-glow: 0 0 30px   rgba(0,174,239,0.22);
+    --shadow-card: 0 4px 24px rgba(6,32,64,0.38);
 
     /* ── Radii ── */
     --radius-sm: 8px;

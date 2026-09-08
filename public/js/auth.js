@@ -76,18 +76,8 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
 
-        const loader = document.getElementById('fullScreenLoader');
-        if (loader) {
-            loader.classList.add('active');
-            setTimeout(() => {
-                navigateTo(data.user.role === 'admin' ? '/admin-dashboard' : '/landing');
-            }, 1800);
-        } else {
-            showAlert('loginAlert', 'Login successful! Redirecting...', 'success');
-            setTimeout(() => {
-                navigateTo(data.user.role === 'admin' ? '/admin-dashboard' : '/landing');
-            }, 400);
-        }
+        navigateTo(data.user.role === 'admin' ? '/admin-dashboard' : '/landing');
+
     } catch (error) {
         showAlert('loginAlert', error.message, 'error');
     } finally {
@@ -149,14 +139,8 @@ document.getElementById('signupForm').addEventListener('submit', async (e) => {
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
 
-        const loader = document.getElementById('fullScreenLoader');
-        if (loader) {
-            loader.classList.add('active');
-            setTimeout(() => { navigateTo('/landing'); }, 1800);
-        } else {
-            showAlert('signupAlert', 'Account created! Redirecting...', 'success');
-            setTimeout(() => { navigateTo('/landing'); }, 400);
-        }
+        navigateTo('/landing');
+
     } catch (error) {
         showAlert('signupAlert', error.message, 'error');
     } finally {
