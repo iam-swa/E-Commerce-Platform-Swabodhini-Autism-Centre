@@ -23,7 +23,9 @@ app.config['MAX_CONTENT_LENGTH'] = 20 * 1024 * 1024  # 20MB max upload
 
 SECRET_KEY  = os.getenv('JWT_SECRET') or 'swabodhini_autism_centre_jwt_secret_key_2024'
 PORT        = int(os.getenv('PORT', 5000))
-DATABASE_URL = os.getenv('DATABASE_URL')
+DATABASE_URL = os.getenv('DATABASE_URL', '')
+if DATABASE_URL.startswith('postgres://'):
+    DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
 
 UPLOAD_PRODUCTS = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'public', 'uploads', 'products')
 UPLOAD_PAYMENTS = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'public', 'uploads', 'payments')
@@ -47,8 +49,12 @@ def add_header(response):
 
 def get_db():
     """Get a psycopg2 connection for the current request (stored on Flask g)."""
-    if 'db' not in g:
-        g.db = psycopg2.connect(DATABASE_URL, cursor_factory=psycopg2.extras.RealDictCursor)
+    db = g.get('db')
+    if db is None or getattr(db, 'closed', 1) != 0:
+        url = os.getenv('DATABASE_URL', DATABASE_URL)
+        if url.startswith('postgres://'):
+            url = url.replace('postgres://', 'postgresql://', 1)
+        g.db = psycopg2.connect(url, cursor_factory=psycopg2.extras.RealDictCursor)
         g.db.autocommit = True
     return g.db
 
@@ -284,8 +290,9 @@ def admin_required(f):
 
 def create_token(user_id):
     """Generate a JWT token valid for 7 days."""
+    exp = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=7)
     return jwt.encode(
-        {'userId': user_id, 'exp': datetime.datetime.utcnow() + datetime.timedelta(days=7)},
+        {'userId': user_id, 'exp': exp},
         SECRET_KEY, algorithm='HS256'
     )
 
@@ -374,7 +381,6 @@ def signup():
         'INSERT INTO users (_id, name, email, phone, "isVerified", role) VALUES (%s,%s,%s,%s,%s,%s)',
         (user_id, name, email, phone, 1, 'user')
     )
-    db.commit()
 
     token = create_token(user_id)
     return jsonify({
@@ -387,33 +393,39 @@ def signup():
 @app.route('/api/auth/login', methods=['POST'])
 def login():
     """Login with phone number. Admin requires password."""
-    data  = request.get_json()
-    phone = data.get('phone', '').strip()
+    try:
+        data  = request.get_json(silent=True) or {}
+        phone = data.get('phone', '').strip()
 
-    if not phone:
-        return jsonify({'message': 'Phone number is required.'}), 400
+        if not phone:
+            return jsonify({'message': 'Phone number is required.'}), 400
 
-    db  = get_db()
-    cur = db.cursor()
-    cur.execute('SELECT * FROM users WHERE phone = %s', (phone,))
-    user = db_fetchone(cur)
-    if not user:
-        return jsonify({'message': 'No account found with this phone number. Please sign up first.'}), 401
+        db  = get_db()
+        cur = db.cursor()
+        cur.execute('SELECT * FROM users WHERE phone = %s', (phone,))
+        user = db_fetchone(cur)
+        if not user:
+            return jsonify({'message': 'No account found with this phone number. Please sign up first.'}), 401
 
-    # Admin must provide password
-    if user['role'] == 'admin':
-        password = data.get('password', '')
-        if not password:
-            return jsonify({'message': 'Password is required for admin login.', 'requirePassword': True}), 400
-        if not user['password'] or not bcrypt.checkpw(password.encode('utf-8'), user['password'].encode('utf-8')):
-            return jsonify({'message': 'Invalid password.'}), 401
+        # Admin must provide password
+        if user.get('role') == 'admin':
+            password = data.get('password', '')
+            if not password:
+                return jsonify({'message': 'Password is required for admin login.', 'requirePassword': True}), 400
+            user_pwd = user.get('password') or ''
+            if not user_pwd or not bcrypt.checkpw(password.encode('utf-8'), user_pwd.encode('utf-8')):
+                return jsonify({'message': 'Invalid password.'}), 401
 
-    token = create_token(user['_id'])
-    return jsonify({
-        'message': 'Login successful!',
-        'token': token,
-        'user': {'id': user['_id'], '_id': user['_id'], 'name': user['name'], 'phone': user['phone'], 'role': user['role']}
-    })
+        token = create_token(user['_id'])
+        return jsonify({
+            'message': 'Login successful!',
+            'token': token,
+            'user': {'id': user['_id'], '_id': user['_id'], 'name': user.get('name'), 'phone': user.get('phone'), 'role': user.get('role')}
+        })
+    except Exception as err:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'message': f'Login error: {str(err)}'}), 500
 
 
 @app.route('/api/auth/me', methods=['GET'])
