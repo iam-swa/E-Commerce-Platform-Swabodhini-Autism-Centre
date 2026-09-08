@@ -21,7 +21,7 @@ app = Flask(__name__, static_folder='public', static_url_path='')
 CORS(app)
 app.config['MAX_CONTENT_LENGTH'] = 20 * 1024 * 1024  # 20MB max upload
 
-SECRET_KEY  = os.getenv('JWT_SECRET', 'swabodhini_autism_centre_jwt_secret_key_2024')
+SECRET_KEY  = os.getenv('JWT_SECRET') or 'swabodhini_autism_centre_jwt_secret_key_2024'
 PORT        = int(os.getenv('PORT', 5000))
 DATABASE_URL = os.getenv('DATABASE_URL')
 
@@ -49,7 +49,7 @@ def get_db():
     """Get a psycopg2 connection for the current request (stored on Flask g)."""
     if 'db' not in g:
         g.db = psycopg2.connect(DATABASE_URL, cursor_factory=psycopg2.extras.RealDictCursor)
-        g.db.autocommit = False
+        g.db.autocommit = True
     return g.db
 
 
@@ -57,7 +57,10 @@ def get_db():
 def close_db(error):
     db = g.pop('db', None)
     if db is not None:
-        db.close()
+        try:
+            db.close()
+        except Exception:
+            pass
 
 
 def init_db():
@@ -1221,7 +1224,10 @@ def not_found(e):
 
 @app.errorhandler(500)
 def server_error(e):
-    return jsonify({'message': 'Something went wrong!'}), 500
+    import traceback
+    traceback.print_exc()
+    err_desc = getattr(e, 'description', str(e))
+    return jsonify({'message': f'Server error: {err_desc}'}), 500
 
 
 # ────────────────────── RUN ──────────────────────
