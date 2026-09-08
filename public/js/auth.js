@@ -4,15 +4,30 @@ function navigateTo(url) {
     setTimeout(function() { window.location.href = url; }, 340);
 }
 
-// Check if user is already logged in
-if (localStorage.getItem('token')) {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    if (user.role === 'admin') {
-        navigateTo('/admin-dashboard');
-    } else {
-        navigateTo('/landing');
+// ── Check if user is already logged in with valid token ──
+(async function initAuth() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+        const res = await fetch('/api/auth/me', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            const data = await res.json();
+            if (data.user && data.user.role === 'admin') {
+                navigateTo('/admin-dashboard');
+            } else {
+                navigateTo('/landing');
+            }
+        } else {
+            // Token is expired or invalid on the current DB
+            localStorage.clear();
+        }
+    } catch (e) {
+        localStorage.clear();
     }
-}
+})();
 
 const loginSection = document.getElementById('loginSection');
 const signupSection = document.getElementById('signupSection');
@@ -31,9 +46,20 @@ document.getElementById('showLogin').addEventListener('click', (e) => {
 
 function showAlert(elementId, message, type) {
     const alert = document.getElementById(elementId);
+    if (!alert) return;
     alert.textContent = message;
-    alert.className = `alert alert-${type}`;
-    setTimeout(() => { alert.className = 'alert'; }, 5000);
+    alert.className = `alert show ${type}`;
+    setTimeout(() => { alert.className = 'alert'; }, 6000);
+}
+
+// Auto-detect admin phone number as user types
+const loginPhoneInput = document.getElementById('loginPhone');
+if (loginPhoneInput) {
+    loginPhoneInput.addEventListener('input', (e) => {
+        if (e.target.value.trim() === '7358665496') {
+            showAdminPasswordField();
+        }
+    });
 }
 
 // ===== LOGIN (using phone number only, admin needs password) =====
