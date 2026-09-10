@@ -43,11 +43,12 @@
   /* ---------- Banner ---------- */
   .banner{
     position:relative;
-    margin:0 -20px;
+    width:100%;
+    margin:0;
     overflow:hidden;
     border-bottom:1px solid rgba(74,158,218,0.14);
   }
-  .banner-track{ position:relative; height:280px; }
+  .banner-track{ position:relative; height:420px; }
   .slide{
     position:absolute; inset:0;
     display:flex;
@@ -167,7 +168,7 @@
   .auth-footer a{ color:var(--cobalt); font-weight:600; text-decoration:underline; }
 
   @media (max-width:520px){
-    .banner-track{ height:230px; }
+    .banner-track{ height:280px; }
     .auth-card{ padding:28px 22px 26px; }
   }
 
@@ -177,47 +178,47 @@
 </style>
 </head>
 <body>
-  <div class="page">
+  <!-- Full-Width Banner -->
+  <section class="banner" id="banner" aria-label="About our products">
+    <div class="banner-track" id="bannerTrack">
 
-    <!-- Banner -->
-    <section class="banner" id="banner" aria-label="About our products">
-      <div class="banner-track" id="bannerTrack">
-
-        <div class="slide is-active">
-          <img src="/images/banner-1.jpg" alt="Handmade products by Swabodhini artisans">
-          <div class="slide-caption">
-            <p class="eyebrow">Swabodhini Autism Centre</p>
-            <h2>Made by hand. Made with heart.</h2>
-          </div>
+      <div class="slide is-active">
+        <img src="/images/banner-1.jpg" alt="Handmade products by Swabodhini artisans">
+        <div class="slide-caption">
+          <p class="eyebrow">Swabodhini Autism Centre</p>
+          <h2>Made by hand. Made with heart.</h2>
         </div>
-
-        <div class="slide">
-          <img src="/images/banner-2.jpg" alt="Diyas, jute bags and home decor by autistic artisans">
-          <div class="slide-caption">
-            <p class="eyebrow">Festive &amp; Home</p>
-            <h2>Crafted by autistic children &amp; adults</h2>
-          </div>
-        </div>
-
-        <div class="slide">
-          <img src="/images/banner-3.jpg" alt="Jewellery and accessories by autistic artisans">
-          <div class="slide-caption">
-            <p class="eyebrow">Fashion &amp; Accessories</p>
-            <h2>Every purchase supports their independence</h2>
-          </div>
-        </div>
-
-        <div class="slide">
-          <img src="/images/banner-4.jpg" alt="Baked treats and snacks by autistic artisans">
-          <div class="slide-caption">
-            <p class="eyebrow">Treats &amp; Snacks</p>
-            <h2>Baked fresh, made with care</h2>
-          </div>
-        </div>
-
       </div>
-      <div class="banner-dots" id="bannerDots"></div>
-    </section>
+
+      <div class="slide">
+        <img src="/images/banner-2.jpg" alt="Diyas, jute bags and home decor by autistic artisans">
+        <div class="slide-caption">
+          <p class="eyebrow">Festive &amp; Home</p>
+          <h2>Crafted by autistic children &amp; adults</h2>
+        </div>
+      </div>
+
+      <div class="slide">
+        <img src="/images/banner-3.jpg" alt="Jewellery and accessories by autistic artisans">
+        <div class="slide-caption">
+          <p class="eyebrow">Fashion &amp; Accessories</p>
+          <h2>Every purchase supports their independence</h2>
+        </div>
+      </div>
+
+      <div class="slide">
+        <img src="/images/banner-4.jpg" alt="Baked treats and snacks by autistic artisans">
+        <div class="slide-caption">
+          <p class="eyebrow">Treats &amp; Snacks</p>
+          <h2>Baked fresh, made with care</h2>
+        </div>
+      </div>
+
+    </div>
+    <div class="banner-dots" id="bannerDots"></div>
+  </section>
+
+  <div class="page">
 
     <!-- Login / Signup -->
     <section class="auth-page">
