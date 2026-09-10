@@ -1128,6 +1128,35 @@ def admin_update_stock(product_id):
     return jsonify({'message': 'Stock updated successfully!', 'product': product})
 
 
+@app.route('/api/admin/change-password', methods=['PUT'])
+@admin_required
+def admin_change_password():
+    """Endpoint for admin to update their account password."""
+    data = request.get_json() or {}
+    current_password = data.get('currentPassword', '')
+    new_password = data.get('newPassword', '')
+
+    if not current_password or not new_password:
+        return jsonify({'message': 'Both current and new passwords are required.'}), 400
+
+    if len(new_password) < 6:
+        return jsonify({'message': 'New password must be at least 6 characters long.'}), 400
+
+    db = get_db()
+    cur = db.cursor()
+    cur.execute('SELECT password FROM users WHERE _id = %s', (request.user['_id'],))
+    admin = db_fetchone(cur)
+
+    if not admin or not admin['password'] or not bcrypt.checkpw(current_password.encode('utf-8'), admin['password'].encode('utf-8')):
+        return jsonify({'message': 'Current password is incorrect.'}), 400
+
+    hashed = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt(12)).decode('utf-8')
+    cur.execute('UPDATE users SET password = %s WHERE _id = %s', (hashed, request.user['_id']))
+    db.commit()
+
+    return jsonify({'message': 'Password changed successfully!'})
+
+
 # ────────────────────── TRACKING ROUTES ──────────────────────
 
 @app.route('/api/track/view', methods=['POST'])

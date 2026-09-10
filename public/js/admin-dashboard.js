@@ -82,7 +82,8 @@ document.addEventListener('DOMContentLoaded', () => {
         products: { title: 'Manage Products', subtitle: 'Add, edit, and manage your product catalog.' },
         orders: { title: 'Manage Orders', subtitle: 'Review and process customer orders.' },
         stock: { title: 'Stock Management', subtitle: 'Monitor inventory levels and stock status.' },
-        users: { title: 'Registered Users', subtitle: 'View all registered customers and their details.' }
+        users: { title: 'Registered Users', subtitle: 'View all registered customers and their details.' },
+        settings: { title: 'Change Admin Password', subtitle: 'Update your admin account login password.' }
     };
 
     function activatePanel(panel) {
@@ -612,3 +613,44 @@ async function loadUsers() {
         showToast('Error loading users', 'error');
     }
 }
+
+// ===== CHANGE PASSWORD FORM LISTENER =====
+document.addEventListener('DOMContentLoaded', () => {
+    const changePasswordForm = document.getElementById('changePasswordForm');
+    if (changePasswordForm) {
+        changePasswordForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('changePasswordBtn');
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (newPassword !== confirmPassword) {
+                showToast('New passwords do not match.', 'error');
+                return;
+            }
+
+            if (newPassword.length < 6) {
+                showToast('New password must be at least 6 characters long.', 'error');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Updating Password...';
+
+            try {
+                const res = await apiCall('/api/admin/change-password', {
+                    method: 'PUT',
+                    body: JSON.stringify({ currentPassword, newPassword })
+                });
+                showToast(res.message || 'Password changed successfully!', 'success');
+                changePasswordForm.reset();
+            } catch (error) {
+                showToast(error.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '🔑 Update Password';
+            }
+        });
+    }
+});

@@ -44,6 +44,9 @@
                 <button class="sidebar-link" data-panel="users" id="nav-users">
                     <span class="icon">👥</span> Registered Users
                 </button>
+                <button class="sidebar-link" data-panel="settings" id="nav-settings">
+                    <span class="icon">🔒</span> Change Password
+                </button>
             </nav>
 
             <div class="sidebar-footer">
@@ -272,6 +275,34 @@
                                 </thead>
                                 <tbody id="usersBody"></tbody>
                             </table>
+                        </div>
+                <!-- ===== CHANGE PASSWORD PANEL ===== -->
+                <div class="panel" id="panel-settings">
+                    <div class="card" style="max-width: 520px; margin: 20px auto;">
+                        <div class="card-header">
+                            <h3>🔒 Change Admin Password</h3>
+                        </div>
+                        <div class="card-body">
+                            <form id="changePasswordForm">
+                                <div class="form-group" style="margin-bottom:16px;">
+                                    <label for="currentPassword" style="display:block;margin-bottom:6px;font-weight:500;">Current Password *</label>
+                                    <input type="password" id="currentPassword" placeholder="Enter current admin password" required
+                                        style="width:100%;padding:10px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);">
+                                </div>
+                                <div class="form-group" style="margin-bottom:16px;">
+                                    <label for="newPassword" style="display:block;margin-bottom:6px;font-weight:500;">New Password *</label>
+                                    <input type="password" id="newPassword" placeholder="Enter new password (min. 6 characters)" minlength="6" required
+                                        style="width:100%;padding:10px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);">
+                                </div>
+                                <div class="form-group" style="margin-bottom:20px;">
+                                    <label for="confirmPassword" style="display:block;margin-bottom:6px;font-weight:500;">Confirm New Password *</label>
+                                    <input type="password" id="confirmPassword" placeholder="Re-enter new password" minlength="6" required
+                                        style="width:100%;padding:10px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);">
+                                </div>
+                                <button type="submit" class="btn btn-primary" id="changePasswordBtn" style="width:100%;padding:12px;">
+                                    🔑 Update Password
+                                </button>
+                            </form>
                         </div>
                     </div>
                 </div>
