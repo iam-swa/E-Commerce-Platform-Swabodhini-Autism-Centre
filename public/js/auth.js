@@ -116,15 +116,133 @@ function showAdminPasswordField() {
     if (document.getElementById('adminPasswordGroup')) return; // already shown
     const form = document.getElementById('loginForm');
     const btn = document.getElementById('loginBtn');
-    const div = document.createElement('div');
-    div.className = 'form-group';
-    div.id = 'adminPasswordGroup';
-    div.innerHTML = `
+
+    // ── Admin password field ──
+    const pwdGroup = document.createElement('div');
+    pwdGroup.className = 'form-group';
+    pwdGroup.id = 'adminPasswordGroup';
+    pwdGroup.innerHTML = `
         <label for="adminPassword">Admin Password</label>
         <input type="password" id="adminPassword" placeholder="Enter admin password" required>
     `;
-    form.insertBefore(div, btn);
+    form.insertBefore(pwdGroup, btn);
+
+    // ── Change Password section ──
+    const changePwdSection = document.createElement('div');
+    changePwdSection.id = 'changePwdSection';
+    changePwdSection.innerHTML = `
+        <button type="button" id="toggleChangePwd" style="
+            background:none; border:none; cursor:pointer;
+            color:var(--marigold,#F0A93E); font-size:0.82rem; font-weight:600;
+            padding:4px 0 12px; text-decoration:underline; text-underline-offset:3px;
+            display:block; margin-top:4px;
+        ">🔑 Change Password</button>
+
+        <div id="changePwdFields" style="display:none; margin-top:8px;">
+            <div class="form-group" style="margin-bottom:10px;">
+                <label for="newPassword" style="font-size:0.82rem;font-weight:600;color:rgba(251,241,228,.65);display:block;margin-bottom:5px;">New Password</label>
+                <input type="password" id="newPassword" placeholder="Enter new password (min 6 chars)"
+                    style="width:100%;padding:11px 16px;border-radius:8px;background:rgba(251,241,228,.08);
+                    border:1px solid rgba(251,241,228,.11);color:#FBF1E4;font-size:0.9rem;outline:none;">
+            </div>
+            <div class="form-group" style="margin-bottom:10px;">
+                <label for="confirmNewPassword" style="font-size:0.82rem;font-weight:600;color:rgba(251,241,228,.65);display:block;margin-bottom:5px;">Confirm New Password</label>
+                <input type="password" id="confirmNewPassword" placeholder="Confirm new password"
+                    style="width:100%;padding:11px 16px;border-radius:8px;background:rgba(251,241,228,.08);
+                    border:1px solid rgba(251,241,228,.11);color:#FBF1E4;font-size:0.9rem;outline:none;">
+            </div>
+            <div id="changePwdAlert" style="display:none; padding:9px 14px; border-radius:8px;
+                font-size:0.82rem; font-weight:600; margin-bottom:10px;"></div>
+            <button type="button" id="doChangePwdBtn" style="
+                width:100%; padding:10px; border-radius:8px; border:none; cursor:pointer;
+                background:var(--rosewood,#6B2B3C); color:#FBF1E4; font-weight:600;
+                font-size:0.88rem; transition:background 0.2s;
+            ">Update Password</button>
+        </div>
+    `;
+    form.insertBefore(changePwdSection, btn);
+
+    // Toggle expand/collapse
+    document.getElementById('toggleChangePwd').addEventListener('click', () => {
+        const fields = document.getElementById('changePwdFields');
+        const isHidden = fields.style.display === 'none';
+        fields.style.display = isHidden ? 'block' : 'none';
+        document.getElementById('toggleChangePwd').textContent =
+            isHidden ? '▲ Cancel' : '🔑 Change Password';
+    });
+
+    // Handle change-password submit
+    document.getElementById('doChangePwdBtn').addEventListener('click', handleChangePassword);
 }
+
+async function handleChangePassword() {
+    const phone = document.getElementById('loginPhone').value.trim();
+    const currentPwd = document.getElementById('adminPassword').value;
+    const newPwd = document.getElementById('newPassword').value;
+    const confirmPwd = document.getElementById('confirmNewPassword').value;
+    const alertBox = document.getElementById('changePwdAlert');
+    const btn = document.getElementById('doChangePwdBtn');
+
+    const showChangePwdMsg = (msg, isError) => {
+        alertBox.style.display = 'block';
+        alertBox.style.background = isError ? 'rgba(255,71,87,0.15)' : 'rgba(46,213,115,0.15)';
+        alertBox.style.color = isError ? '#ff8a92' : '#7ff0b0';
+        alertBox.style.border = `1px solid ${isError ? 'rgba(255,71,87,0.3)' : 'rgba(46,213,115,0.3)'}`;
+        alertBox.textContent = msg;
+    };
+
+    if (!currentPwd) return showChangePwdMsg('Enter your current admin password above first.', true);
+    if (!newPwd) return showChangePwdMsg('Please enter a new password.', true);
+    if (newPwd.length < 6) return showChangePwdMsg('New password must be at least 6 characters.', true);
+    if (newPwd !== confirmPwd) return showChangePwdMsg('Passwords do not match.', true);
+    if (newPwd === currentPwd) return showChangePwdMsg('New password must be different from current.', true);
+
+    btn.textContent = 'Updating...';
+    btn.disabled = true;
+
+    try {
+        // Step 1: Login with current credentials to get token
+        const loginRes = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phone, password: currentPwd })
+        });
+        const loginData = await loginRes.json();
+        if (!loginRes.ok) throw new Error(loginData.message || 'Current password is incorrect.');
+
+        const token = loginData.token;
+
+        // Step 2: Change password using the token
+        const changeRes = await fetch('/api/admin/change-password', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ currentPassword: currentPwd, newPassword: newPwd })
+        });
+        const changeData = await changeRes.json();
+        if (!changeRes.ok) throw new Error(changeData.message || 'Failed to change password.');
+
+        showChangePwdMsg('✓ Password changed successfully! You can now log in.', false);
+        // Clear new password fields
+        document.getElementById('newPassword').value = '';
+        document.getElementById('confirmNewPassword').value = '';
+        document.getElementById('adminPassword').value = '';
+        // Collapse the section
+        setTimeout(() => {
+            document.getElementById('changePwdFields').style.display = 'none';
+            document.getElementById('toggleChangePwd').textContent = '🔑 Change Password';
+        }, 2000);
+
+    } catch (err) {
+        showChangePwdMsg(err.message, true);
+    } finally {
+        btn.textContent = 'Update Password';
+        btn.disabled = false;
+    }
+}
+
 
 // ===== SIGNUP (name + phone only) =====
 document.getElementById('signupForm').addEventListener('submit', async (e) => {
