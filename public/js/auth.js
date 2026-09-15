@@ -130,33 +130,41 @@ function showAdminPasswordField() {
     // ── Change Password section ──
     const changePwdSection = document.createElement('div');
     changePwdSection.id = 'changePwdSection';
+    changePwdSection.style.cssText = 'position:relative; z-index:10;';
     changePwdSection.innerHTML = `
         <button type="button" id="toggleChangePwd" style="
             background:none; border:none; cursor:pointer;
-            color:var(--marigold,#F0A93E); font-size:0.82rem; font-weight:600;
+            color:#1B54B8; font-size:0.82rem; font-weight:600;
             padding:4px 0 12px; text-decoration:underline; text-underline-offset:3px;
-            display:block; margin-top:4px;
+            display:block; margin-top:4px; pointer-events:auto;
         ">🔑 Change Password</button>
 
-        <div id="changePwdFields" style="display:none; margin-top:8px;">
-            <div class="form-group" style="margin-bottom:10px;">
-                <label for="newPassword" style="font-size:0.82rem;font-weight:600;color:rgba(251,241,228,.65);display:block;margin-bottom:5px;">New Password</label>
+        <div id="changePwdFields" style="display:none; margin-top:4px; position:relative; z-index:10;">
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-size:13px; font-weight:600; margin-bottom:6px; color:#2a4a6a;">New Password</label>
                 <input type="password" id="newPassword" placeholder="Enter new password (min 6 chars)"
-                    style="width:100%;padding:11px 16px;border-radius:8px;background:rgba(251,241,228,.08);
-                    border:1px solid rgba(251,241,228,.11);color:#FBF1E4;font-size:0.9rem;outline:none;">
+                    style="width:100%; padding:12px 14px; font-size:15px;
+                    border:1.5px solid #b8d9f0; border-radius:10px;
+                    background:#f0f8ff; color:#0D1B3E; font-family:inherit;
+                    outline:none; pointer-events:auto; position:relative; z-index:10;
+                    transition:border-color .2s, box-shadow .2s; box-sizing:border-box;">
             </div>
-            <div class="form-group" style="margin-bottom:10px;">
-                <label for="confirmNewPassword" style="font-size:0.82rem;font-weight:600;color:rgba(251,241,228,.65);display:block;margin-bottom:5px;">Confirm New Password</label>
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-size:13px; font-weight:600; margin-bottom:6px; color:#2a4a6a;">Confirm New Password</label>
                 <input type="password" id="confirmNewPassword" placeholder="Confirm new password"
-                    style="width:100%;padding:11px 16px;border-radius:8px;background:rgba(251,241,228,.08);
-                    border:1px solid rgba(251,241,228,.11);color:#FBF1E4;font-size:0.9rem;outline:none;">
+                    style="width:100%; padding:12px 14px; font-size:15px;
+                    border:1.5px solid #b8d9f0; border-radius:10px;
+                    background:#f0f8ff; color:#0D1B3E; font-family:inherit;
+                    outline:none; pointer-events:auto; position:relative; z-index:10;
+                    transition:border-color .2s, box-shadow .2s; box-sizing:border-box;">
             </div>
             <div id="changePwdAlert" style="display:none; padding:9px 14px; border-radius:8px;
                 font-size:0.82rem; font-weight:600; margin-bottom:10px;"></div>
             <button type="button" id="doChangePwdBtn" style="
-                width:100%; padding:10px; border-radius:8px; border:none; cursor:pointer;
-                background:var(--rosewood,#6B2B3C); color:#FBF1E4; font-weight:600;
-                font-size:0.88rem; transition:background 0.2s;
+                width:100%; padding:12px; border-radius:10px; border:none; cursor:pointer;
+                background:#6B2B3C; color:#fff; font-weight:600;
+                font-size:0.9rem; font-family:inherit; margin-bottom:10px;
+                pointer-events:auto; position:relative; z-index:10;
             ">Update Password</button>
         </div>
     `;
