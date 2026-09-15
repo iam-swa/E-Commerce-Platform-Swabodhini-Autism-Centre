@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Admin Dashboard - Swabodhini Autism Centre E-Commerce Management">
     <title>Admin Dashboard | Swabodhini Autism Centre</title>
-    <link rel="stylesheet" href="/css/admin-dashboard.css?v=20240915_2">
+    <link rel="stylesheet" href="/css/admin-dashboard.css?v=20260915_fix4">
 </head>
 
 <body>
@@ -316,7 +316,7 @@
         <div class="modal">
             <div class="modal-header">
                 <h3 id="modalTitle">Add Product</h3>
-                <button class="modal-close" id="closeProductModal">&times;</button>
+                <button class="modal-close" id="closeProductModal" onclick="closeProductModal()">&times;</button>
             </div>
             <div class="modal-body">
                 <form id="productForm">
@@ -368,7 +368,7 @@
         <div class="modal">
             <div class="modal-header">
                 <h3>Payment Screenshot</h3>
-                <button class="modal-close" id="closeScreenshotModal">&times;</button>
+                <button class="modal-close" id="closeScreenshotModal" onclick="document.getElementById('screenshotModal').style.display='none';document.getElementById('screenshotModal').classList.remove('active');">&times;</button>
             </div>
             <div class="modal-body">
                 <img id="screenshotImage" src="" alt="Payment Screenshot" class="screenshot-preview">
@@ -379,7 +379,7 @@
     <!-- Toast container -->
     <div class="toast-container" id="toastContainer"></div>
 
-    <script src="/js/admin-dashboard.js?v=20240915_2"></script>
+    <script src="/js/admin-dashboard.js?v=20260915_fix4"></script>
 </body>
 
 </html>

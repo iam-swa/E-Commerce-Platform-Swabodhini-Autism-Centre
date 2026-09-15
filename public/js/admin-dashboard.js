@@ -297,27 +297,53 @@ function openProductModal(productId = null) {
     const title = document.getElementById('modalTitle');
     const form = document.getElementById('productForm');
 
-    if (productId && window.productsMap && window.productsMap[productId]) {
-        const product = window.productsMap[productId];
-        title.textContent = 'Edit Product';
-        document.getElementById('productId').value = product._id;
-        document.getElementById('prodName').value = product.name || '';
-        document.getElementById('prodPrice').value = product.price || 0;
-        document.getElementById('prodCategory').value = product.category || '';
-        document.getElementById('prodStock').value = product.stock != null ? product.stock : 10;
-        document.getElementById('prodDesc').value = product.description || '';
-        document.getElementById('prodImage').value = '';
-        document.getElementById('imageFileName').textContent = product.image ? 'Current: ' + product.image.split('/').pop() : '';
-    } else {
-        title.textContent = 'Add New Product';
-        form.reset();
-        document.getElementById('productId').value = '';
-        document.getElementById('imageFileName').textContent = '';
+    if (!modal) {
+        console.error('productModal element not found');
+        return;
     }
 
+    if (productId && typeof productId === 'string' && window.productsMap && window.productsMap[productId]) {
+        const product = window.productsMap[productId];
+        if (title) title.textContent = 'Edit Product';
+        if (document.getElementById('productId')) document.getElementById('productId').value = product._id;
+        if (document.getElementById('prodName')) document.getElementById('prodName').value = product.name || '';
+        if (document.getElementById('prodPrice')) document.getElementById('prodPrice').value = product.price || 0;
+        if (document.getElementById('prodCategory')) document.getElementById('prodCategory').value = product.category || '';
+        if (document.getElementById('prodStock')) document.getElementById('prodStock').value = product.stock != null ? product.stock : 10;
+        if (document.getElementById('prodDesc')) document.getElementById('prodDesc').value = product.description || '';
+        if (document.getElementById('prodImage')) document.getElementById('prodImage').value = '';
+        if (document.getElementById('imageFileName')) {
+            document.getElementById('imageFileName').textContent = product.image ? 'Current: ' + product.image.split('/').pop() : '';
+        }
+    } else {
+        if (title) title.textContent = 'Add New Product';
+        if (form) form.reset();
+        const pid = document.getElementById('productId');
+        if (pid) pid.value = '';
+        const imgName = document.getElementById('imageFileName');
+        if (imgName) imgName.textContent = '';
+    }
+
+    // Force inline display and active class so modal is 100% visible
+    modal.style.display = 'flex';
+    modal.style.opacity = '1';
+    modal.style.visibility = 'visible';
+    modal.style.pointerEvents = 'auto';
     modal.classList.add('active');
 }
 window.openProductModal = openProductModal;
+
+function closeProductModal() {
+    const modal = document.getElementById('productModal');
+    if (modal) {
+        modal.style.display = 'none';
+        modal.style.opacity = '0';
+        modal.style.visibility = 'hidden';
+        modal.style.pointerEvents = 'none';
+        modal.classList.remove('active');
+    }
+}
+window.closeProductModal = closeProductModal;
 
 // Setup modal events
 function initModalEvents() {
@@ -326,21 +352,37 @@ function initModalEvents() {
 
     // Close modals
     const closeProdBtn = document.getElementById('closeProductModal');
-    if (closeProdBtn) closeProdBtn.onclick = () => productModal.classList.remove('active');
+    if (closeProdBtn) closeProdBtn.onclick = closeProductModal;
+
     const closeScrBtn = document.getElementById('closeScreenshotModal');
-    if (closeScrBtn) closeScrBtn.onclick = () => screenshotModal.classList.remove('active');
+    if (closeScrBtn) {
+        closeScrBtn.onclick = () => {
+            if (screenshotModal) {
+                screenshotModal.style.display = 'none';
+                screenshotModal.classList.remove('active');
+            }
+        };
+    }
 
     if (productModal) {
-        productModal.onclick = e => { if (e.target === productModal) productModal.classList.remove('active'); };
+        productModal.onclick = e => { if (e.target === productModal) closeProductModal(); };
     }
     if (screenshotModal) {
-        screenshotModal.onclick = e => { if (e.target === screenshotModal) screenshotModal.classList.remove('active'); };
+        screenshotModal.onclick = e => {
+            if (e.target === screenshotModal) {
+                screenshotModal.style.display = 'none';
+                screenshotModal.classList.remove('active');
+            }
+        };
     }
 
     // Add Product button (inside panel)
     const addProdBtn = document.getElementById('addProductBtn');
     if (addProdBtn) {
-        addProdBtn.onclick = () => openProductModal();
+        addProdBtn.onclick = (e) => {
+            e.preventDefault();
+            openProductModal();
+        };
     }
 
     // Image upload display
@@ -348,7 +390,8 @@ function initModalEvents() {
     if (prodImgInput) {
         prodImgInput.onchange = (e) => {
             const fileName = e.target.files[0]?.name || '';
-            document.getElementById('imageFileName').textContent = fileName;
+            const labelEl = document.getElementById('imageFileName');
+            if (labelEl) labelEl.textContent = fileName;
         };
     }
 
@@ -377,7 +420,7 @@ function initModalEvents() {
                 const data = await apiCall(url, { method, body: formData });
 
                 showToast(data.message || (id ? 'Product updated!' : 'Product created!'), 'success');
-                productModal.classList.remove('active');
+                closeProductModal();
                 loadProducts();
             } catch (error) {
                 showToast(error.message, 'error');
@@ -473,8 +516,15 @@ async function loadOrders() {
 }
 
 window.viewScreenshot = function (src) {
-    document.getElementById('screenshotImage').src = src;
-    document.getElementById('screenshotModal').classList.add('active');
+    const modal = document.getElementById('screenshotModal');
+    const img = document.getElementById('screenshotImage');
+    if (img) img.src = src;
+    if (modal) {
+        modal.style.display = 'flex';
+        modal.style.opacity = '1';
+        modal.style.visibility = 'visible';
+        modal.classList.add('active');
+    }
 };
 
 window.updateOrderStatus = async function (orderId, status) {
