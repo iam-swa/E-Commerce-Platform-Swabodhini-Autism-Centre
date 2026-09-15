@@ -163,9 +163,9 @@ def init_db():
         hashed   = bcrypt.hashpw('admin123'.encode('utf-8'), bcrypt.gensalt(12)).decode('utf-8')
         cur.execute(
             'INSERT INTO users (_id, name, email, password, phone, "isVerified", role) VALUES (%s,%s,%s,%s,%s,%s,%s)',
-            (admin_id, 'Admin-Swabodhini', 'admin@swabodhini.com', hashed, '7358665496', 1, 'admin')
+            (admin_id, 'Admin-Swabodhini', 'admin@swabodhini.com', hashed, '9884746078', 1, 'admin')
         )
-        print('[Admin] Admin user created: Phone: 7358665496 / Password: admin123')
+        print('[Admin] Admin user created: Phone: 9884746078 / Password: admin123')
 
     # Seed products if empty
     cur.execute('SELECT COUNT(*) AS cnt FROM products')
@@ -1277,5 +1277,5 @@ if __name__ == '__main__':
     init_db()
     print(f'\n[Server] Swabodhini E-Commerce Server running on http://localhost:{PORT}')
     print(f'[DB] Backend: Python/Flask + PostgreSQL (NeonDB)')
-    print(f'[Admin] Admin Login: Phone: 7358665496 / Password: admin123\n')
+    print(f'[Admin] Admin Login: Phone: 9884746078 / Password: admin123\n')
     app.run(host='0.0.0.0', port=PORT, debug=True)

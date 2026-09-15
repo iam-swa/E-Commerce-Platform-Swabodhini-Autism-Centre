@@ -56,7 +56,7 @@ function showAlert(elementId, message, type) {
 const loginPhoneInput = document.getElementById('loginPhone');
 if (loginPhoneInput) {
     loginPhoneInput.addEventListener('input', (e) => {
-        if (e.target.value.trim() === '7358665496') {
+        if (e.target.value.trim() === '9884746078') {
             showAdminPasswordField();
         }
     });
