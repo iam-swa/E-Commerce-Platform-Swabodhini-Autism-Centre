@@ -156,22 +156,31 @@ def init_db():
         );
     ''')
 
-    # Clean up all existing users except admin, and ensure admin phone is updated
+    # One-time cleanup for project handover (executed only once, never on subsequent restarts)
     try:
-        # Delete dependent data for non-admin users
         cur.execute('''
-            DELETE FROM cart_items WHERE user_id IN (SELECT _id FROM users WHERE role != 'admin');
-            DELETE FROM product_views WHERE user_id IN (SELECT _id FROM users WHERE role != 'admin');
-            DELETE FROM user_locations WHERE user_id IN (SELECT _id FROM users WHERE role != 'admin');
-            DELETE FROM order_products WHERE order_id IN (
-                SELECT _id FROM orders WHERE user_id IN (SELECT _id FROM users WHERE role != 'admin')
+            CREATE TABLE IF NOT EXISTS _system_migrations (
+                name TEXT PRIMARY KEY,
+                run_at TIMESTAMP DEFAULT NOW()
             );
-            DELETE FROM orders WHERE user_id IN (SELECT _id FROM users WHERE role != 'admin');
-            DELETE FROM users WHERE role != 'admin';
+            SELECT COUNT(*) AS cnt FROM _system_migrations WHERE name = 'handover_purge_non_admin_users';
         ''')
-        print('[Cleanup] All non-admin test users removed successfully.')
+        res = cur.fetchone()
+        if res and res['cnt'] == 0:
+            cur.execute('''
+                DELETE FROM cart_items WHERE user_id IN (SELECT _id FROM users WHERE role != 'admin');
+                DELETE FROM product_views WHERE user_id IN (SELECT _id FROM users WHERE role != 'admin');
+                DELETE FROM user_locations WHERE user_id IN (SELECT _id FROM users WHERE role != 'admin');
+                DELETE FROM order_products WHERE order_id IN (
+                    SELECT _id FROM orders WHERE user_id IN (SELECT _id FROM users WHERE role != 'admin')
+                );
+                DELETE FROM orders WHERE user_id IN (SELECT _id FROM users WHERE role != 'admin');
+                DELETE FROM users WHERE role != 'admin';
+                INSERT INTO _system_migrations (name) VALUES ('handover_purge_non_admin_users');
+            ''')
+            print('[Cleanup] One-time non-admin user purge completed and logged.')
     except Exception as e:
-        print('[Cleanup] Note on users cleanup:', e)
+        print('[Cleanup] Note on migration:', e)
 
     # Seed or update admin user
     cur.execute("SELECT COUNT(*) AS cnt FROM users WHERE role = 'admin'")
