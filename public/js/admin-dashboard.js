@@ -247,6 +247,8 @@ function getStatusClass(status) {
 }
 
 // ===== PRODUCTS MANAGEMENT =====
+window.productsMap = {};
+
 async function loadProducts() {
     const loading = document.getElementById('productsLoading');
     const body = document.getElementById('productsBody');
@@ -256,12 +258,14 @@ async function loadProducts() {
         const products = await apiCall('/api/products/all');
         loading.style.display = 'none';
 
+        window.productsMap = {};
         if (products.length === 0) {
             body.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="icon">📦</div><h3>No products</h3><p>Add your first product</p></div></td></tr>';
             return;
         }
 
         body.innerHTML = products.map(p => {
+            window.productsMap[p._id] = p;
             const stockClass = p.stock < 5 ? 'stock-low' : p.stock < 15 ? 'stock-medium' : 'stock-ok';
             const rowClass = p.stock < 5 ? 'row-low-stock' : '';
             return `
@@ -274,7 +278,7 @@ async function loadProducts() {
                     <td><span class="badge ${p.isActive ? 'badge-success' : 'badge-danger'}">${p.isActive ? '● Active' : '● Inactive'}</span></td>
                     <td>
                         <div class="action-btns">
-                            <button class="btn btn-secondary btn-xs" onclick='editProduct(${JSON.stringify(p).replace(/'/g, "&#39;")})'>✏️ Edit</button>
+                            <button class="btn btn-secondary btn-xs" onclick="editProduct('${p._id}')">✏️ Edit</button>
                             <button class="btn btn-danger btn-xs" onclick="deleteProduct('${p._id}')">🗑️</button>
                         </div>
                     </td>
@@ -288,20 +292,22 @@ async function loadProducts() {
 }
 
 // Product Modal
-function openProductModal(product = null) {
+function openProductModal(productId = null) {
     const modal = document.getElementById('productModal');
     const title = document.getElementById('modalTitle');
     const form = document.getElementById('productForm');
 
-    if (product) {
+    if (productId && window.productsMap && window.productsMap[productId]) {
+        const product = window.productsMap[productId];
         title.textContent = 'Edit Product';
         document.getElementById('productId').value = product._id;
-        document.getElementById('prodName').value = product.name;
-        document.getElementById('prodPrice').value = product.price;
+        document.getElementById('prodName').value = product.name || '';
+        document.getElementById('prodPrice').value = product.price || 0;
         document.getElementById('prodCategory').value = product.category || '';
-        document.getElementById('prodStock').value = product.stock;
-        document.getElementById('prodDesc').value = product.description;
-        document.getElementById('imageFileName').textContent = '';
+        document.getElementById('prodStock').value = product.stock != null ? product.stock : 10;
+        document.getElementById('prodDesc').value = product.description || '';
+        document.getElementById('prodImage').value = '';
+        document.getElementById('imageFileName').textContent = product.image ? 'Current: ' + product.image.split('/').pop() : '';
     } else {
         title.textContent = 'Add New Product';
         form.reset();
@@ -311,64 +317,88 @@ function openProductModal(product = null) {
 
     modal.classList.add('active');
 }
+window.openProductModal = openProductModal;
 
 // Setup modal events
-document.addEventListener('DOMContentLoaded', () => {
+function initModalEvents() {
     const productModal = document.getElementById('productModal');
     const screenshotModal = document.getElementById('screenshotModal');
 
     // Close modals
-    document.getElementById('closeProductModal').addEventListener('click', () => productModal.classList.remove('active'));
-    document.getElementById('closeScreenshotModal').addEventListener('click', () => screenshotModal.classList.remove('active'));
-    productModal.addEventListener('click', e => { if (e.target === productModal) productModal.classList.remove('active'); });
-    screenshotModal.addEventListener('click', e => { if (e.target === screenshotModal) screenshotModal.classList.remove('active'); });
+    const closeProdBtn = document.getElementById('closeProductModal');
+    if (closeProdBtn) closeProdBtn.onclick = () => productModal.classList.remove('active');
+    const closeScrBtn = document.getElementById('closeScreenshotModal');
+    if (closeScrBtn) closeScrBtn.onclick = () => screenshotModal.classList.remove('active');
+
+    if (productModal) {
+        productModal.onclick = e => { if (e.target === productModal) productModal.classList.remove('active'); };
+    }
+    if (screenshotModal) {
+        screenshotModal.onclick = e => { if (e.target === screenshotModal) screenshotModal.classList.remove('active'); };
+    }
 
     // Add Product button (inside panel)
-    document.getElementById('addProductBtn').addEventListener('click', () => openProductModal());
+    const addProdBtn = document.getElementById('addProductBtn');
+    if (addProdBtn) {
+        addProdBtn.onclick = () => openProductModal();
+    }
 
     // Image upload display
-    document.getElementById('prodImage').addEventListener('change', (e) => {
-        const fileName = e.target.files[0]?.name || '';
-        document.getElementById('imageFileName').textContent = fileName;
-    });
+    const prodImgInput = document.getElementById('prodImage');
+    if (prodImgInput) {
+        prodImgInput.onchange = (e) => {
+            const fileName = e.target.files[0]?.name || '';
+            document.getElementById('imageFileName').textContent = fileName;
+        };
+    }
 
     // Save product form
-    document.getElementById('productForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const id = document.getElementById('productId').value;
-        const saveBtn = document.getElementById('saveProductBtn');
-        saveBtn.textContent = '⏳ Saving...';
-        saveBtn.disabled = true;
+    const prodForm = document.getElementById('productForm');
+    if (prodForm) {
+        prodForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('productId').value;
+            const saveBtn = document.getElementById('saveProductBtn');
+            saveBtn.textContent = '⏳ Saving...';
+            saveBtn.disabled = true;
 
-        const formData = new FormData();
-        formData.append('name', document.getElementById('prodName').value);
-        formData.append('price', document.getElementById('prodPrice').value);
-        formData.append('category', document.getElementById('prodCategory').value);
-        formData.append('stock', document.getElementById('prodStock').value);
-        formData.append('description', document.getElementById('prodDesc').value);
-        const imageFile = document.getElementById('prodImage').files[0];
-        if (imageFile) formData.append('image', imageFile);
+            const formData = new FormData();
+            formData.append('name', document.getElementById('prodName').value.trim());
+            formData.append('price', document.getElementById('prodPrice').value);
+            formData.append('category', document.getElementById('prodCategory').value.trim() || 'General');
+            formData.append('stock', document.getElementById('prodStock').value || '10');
+            formData.append('description', document.getElementById('prodDesc').value.trim());
+            const imageFile = document.getElementById('prodImage').files[0];
+            if (imageFile) formData.append('image', imageFile);
 
-        try {
-            const url = id ? `/api/products/${id}` : '/api/products';
-            const method = id ? 'PUT' : 'POST';
-            const data = await apiCall(url, { method, body: formData });
+            try {
+                const url = id ? `/api/products/${id}` : '/api/products';
+                const method = id ? 'PUT' : 'POST';
+                const data = await apiCall(url, { method, body: formData });
 
-            showToast(data.message);
-            productModal.classList.remove('active');
-            loadProducts();
-        } catch (error) {
-            showToast(error.message, 'error');
-        } finally {
-            saveBtn.textContent = '💾 Save Product';
-            saveBtn.disabled = false;
-        }
-    });
-});
+                showToast(data.message || (id ? 'Product updated!' : 'Product created!'), 'success');
+                productModal.classList.remove('active');
+                loadProducts();
+            } catch (error) {
+                showToast(error.message, 'error');
+            } finally {
+                saveBtn.textContent = '💾 Save Product';
+                saveBtn.disabled = false;
+            }
+        };
+    }
+}
+
+// Ensure initModalEvents runs
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initModalEvents);
+} else {
+    initModalEvents();
+}
 
 // Global functions for inline handlers
-window.editProduct = function (product) {
-    openProductModal(product);
+window.editProduct = function (id) {
+    openProductModal(id);
 };
 
 window.deleteProduct = async function (id) {
