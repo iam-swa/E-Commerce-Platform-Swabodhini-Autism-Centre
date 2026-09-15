@@ -156,8 +156,25 @@ def init_db():
         );
     ''')
 
+    # Clean up all existing users except admin, and ensure admin phone is updated
+    try:
+        # Delete dependent data for non-admin users
+        cur.execute('''
+            DELETE FROM cart_items WHERE user_id IN (SELECT _id FROM users WHERE role != 'admin');
+            DELETE FROM product_views WHERE user_id IN (SELECT _id FROM users WHERE role != 'admin');
+            DELETE FROM user_locations WHERE user_id IN (SELECT _id FROM users WHERE role != 'admin');
+            DELETE FROM order_products WHERE order_id IN (
+                SELECT _id FROM orders WHERE user_id IN (SELECT _id FROM users WHERE role != 'admin')
+            );
+            DELETE FROM orders WHERE user_id IN (SELECT _id FROM users WHERE role != 'admin');
+            DELETE FROM users WHERE role != 'admin';
+        ''')
+        print('[Cleanup] All non-admin test users removed successfully.')
+    except Exception as e:
+        print('[Cleanup] Note on users cleanup:', e)
+
     # Seed or update admin user
-    cur.execute('SELECT COUNT(*) AS cnt FROM users')
+    cur.execute("SELECT COUNT(*) AS cnt FROM users WHERE role = 'admin'")
     if cur.fetchone()['cnt'] == 0:
         admin_id = generate_id()
         hashed   = bcrypt.hashpw('admin123'.encode('utf-8'), bcrypt.gensalt(12)).decode('utf-8')
@@ -167,8 +184,8 @@ def init_db():
         )
         print('[Admin] Admin user created: Phone: 9884746078 / Password: admin123')
     else:
-        # If admin user with old phone number exists, update phone to 9884746078
-        cur.execute('UPDATE users SET phone = %s WHERE phone = %s OR role = %s', ('9884746078', '7358665496', 'admin'))
+        # Update admin user phone to 9884746078
+        cur.execute("UPDATE users SET phone = %s WHERE role = 'admin'", ('9884746078',))
         print('[Admin] Admin user phone synced to 9884746078')
 
     # Seed products if empty
