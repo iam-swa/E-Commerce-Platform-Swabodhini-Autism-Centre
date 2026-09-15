@@ -156,7 +156,7 @@ def init_db():
         );
     ''')
 
-    # Seed admin if no users exist
+    # Seed or update admin user
     cur.execute('SELECT COUNT(*) AS cnt FROM users')
     if cur.fetchone()['cnt'] == 0:
         admin_id = generate_id()
@@ -166,6 +166,10 @@ def init_db():
             (admin_id, 'Admin-Swabodhini', 'admin@swabodhini.com', hashed, '9884746078', 1, 'admin')
         )
         print('[Admin] Admin user created: Phone: 9884746078 / Password: admin123')
+    else:
+        # If admin user with old phone number exists, update phone to 9884746078
+        cur.execute('UPDATE users SET phone = %s WHERE phone = %s OR role = %s', ('9884746078', '7358665496', 'admin'))
+        print('[Admin] Admin user phone synced to 9884746078')
 
     # Seed products if empty
     cur.execute('SELECT COUNT(*) AS cnt FROM products')
