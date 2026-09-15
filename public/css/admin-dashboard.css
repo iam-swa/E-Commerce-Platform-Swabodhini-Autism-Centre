@@ -512,14 +512,20 @@ img { max-width: 100%; display: block; }
 /* ===== MODAL ===== */
 .modal-overlay {
     position: fixed; inset: 0;
-    background: rgba(0,0,0,0.6);
+    background: rgba(0,0,0,0.7);
     backdrop-filter: blur(10px);
-    z-index: 2000;
-    display: flex; align-items: center; justify-content: center;
+    -webkit-backdrop-filter: blur(10px);
+    z-index: 99999;
+    display: none; align-items: center; justify-content: center;
     padding: 1rem; opacity: 0; visibility: hidden;
-    transition: var(--transition);
+    transition: opacity 0.25s ease;
 }
-.modal-overlay.active { opacity: 1; visibility: visible; }
+.modal-overlay.active {
+    display: flex !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+}
 
 .modal {
     background: rgba(13,27,62,0.97);
